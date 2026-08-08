@@ -704,6 +704,61 @@ function composeTicket(
   ctx.fill();
 }
 
+/** The back of the card: big scannable QR + the builder's details. */
+export function composeCardBack(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  identity: Identity | undefined,
+  style: FrameStyle = "sunset",
+): void {
+  const cfg = STYLE[style];
+  const S = Math.min(W, H);
+  const u = S / 1000;
+  const m = S * 0.04;
+  const cx = W / 2;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = GREEN;
+  ctx.fillRect(0, 0, W, H);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+
+  drawWordmark(ctx, cx, m + u * 80, u * 54, cfg.accent);
+  ctx.textAlign = "center";
+  ctx.fillStyle = PINK;
+  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+  ctx.fillText("BUILDER PASS", cx, m + u * 120);
+
+  const qbox = Math.min(W * 0.62, H * 0.42);
+  const qx = cx - qbox / 2;
+  const qy = H * 0.3;
+  drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity)));
+
+  ctx.fillStyle = CREAM;
+  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+  ctx.fillText("SCAN FOR DETAILS", cx, qy + qbox + u * 46);
+
+  ctx.fillStyle = cfg.accent;
+  ctx.font = `800 ${u * 54}px ${FONT.display()}`;
+  ctx.fillText(truncate(identity?.name || "BUILDER", 18), cx, qy + qbox + u * 116);
+  if (identity?.builderClass) {
+    ctx.fillStyle = PINK;
+    ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+    ctx.fillText(`// ${identity.builderClass.toUpperCase()}`, cx, qy + qbox + u * 156);
+  }
+
+  ctx.fillStyle = "rgba(255,251,232,0.8)";
+  ctx.font = `500 ${u * 20}px ${FONT.mono()}`;
+  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H - m - u * 54);
+  ctx.fillStyle = cfg.accent;
+  ctx.font = `700 ${u * 22}px ${FONT.mono()}`;
+  ctx.fillText(`2:47 PM STUDIO · #${SHARE.hashtag}`, cx, H - m - u * 22);
+
+  pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, S * 0.05, S);
+}
+
 // ---------- image template overlay ----------
 
 function composeOverlay(

@@ -54,6 +54,34 @@ export async function renderToBlob(input: RenderInput): Promise<Blob> {
   return blob;
 }
 
+/** Compose the graphic onto a canvas element (for use as a WebGL texture). */
+export async function renderToCanvas(
+  input: RenderInput,
+  maxSide = 1024,
+): Promise<HTMLCanvasElement> {
+  let lw: number;
+  let lh: number;
+  if (input.overlay) {
+    lw = 1080;
+    lh = 1080;
+  } else {
+    const cfg = SHAPE[input.shape ?? "square"];
+    lw = cfg.w;
+    lh = cfg.h;
+  }
+  const s = Math.min(1, maxSide / Math.max(lw, lh));
+  const w = Math.round(lw * s);
+  const h = Math.round(lh * s);
+  await ensureFontsLoaded();
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable.");
+  compose({ ...input, ctx, w, h });
+  return canvas;
+}
+
 export type RenderTeamInput = Omit<TeamComposeInput, "ctx" | "w" | "h"> & {
   size?: number;
 };

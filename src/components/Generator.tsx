@@ -6,6 +6,7 @@ import FrameCanvas from "./FrameCanvas";
 import FrameControls from "./FrameControls";
 import ResultActions from "./ResultActions";
 import TeamMode from "./TeamMode";
+import Card3DView from "./Card3DView";
 import { DEFAULT_PLACEMENT, type Placement } from "@/lib/canvas/transform";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Identity } from "@/lib/canvas/compose";
@@ -37,6 +38,7 @@ export default function Generator() {
   const [style, setStyle] = useState<FrameStyle>("sunset");
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
+  const [view, setView] = useState<"edit" | "3d">("edit");
 
   const shape: FrameShape =
     tab === "profile" ? profileShape : tab === "banner" ? "landscape" : "ticket";
@@ -101,15 +103,43 @@ export default function Generator() {
             <Uploader onPhoto={onPhoto} />
           ) : (
             <>
-              <FrameCanvas
-                photo={photo.bitmap}
-                photoSize={photo.size}
-                placement={placement}
-                identity={identity}
-                style={style}
-                shape={shape}
-                onPlacementChange={setPlacement}
-              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setView("edit")}
+                  aria-pressed={view === "edit"}
+                  className={pill(view === "edit")}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("3d")}
+                  aria-pressed={view === "3d"}
+                  className={pill(view === "3d")}
+                >
+                  3D Card
+                </button>
+              </div>
+              {view === "edit" ? (
+                <FrameCanvas
+                  photo={photo.bitmap}
+                  photoSize={photo.size}
+                  placement={placement}
+                  identity={identity}
+                  style={style}
+                  shape={shape}
+                  onPlacementChange={setPlacement}
+                />
+              ) : (
+                <Card3DView
+                  photo={photo}
+                  placement={placement}
+                  identity={identity}
+                  style={style}
+                  shape={shape}
+                />
+              )}
               <FrameControls
                 scale={placement.scale}
                 onScale={(s) => setPlacement((p) => ({ ...p, scale: s }))}
