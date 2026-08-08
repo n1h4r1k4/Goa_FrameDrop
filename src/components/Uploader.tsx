@@ -7,6 +7,7 @@ import {
   ACCEPT,
   type DecodedPhoto,
 } from "@/lib/heic/decode";
+import CameraCapture from "./CameraCapture";
 
 type Props = { onPhoto: (p: DecodedPhoto) => void };
 
@@ -87,6 +88,12 @@ export default function Uploader({ onPhoto }: Props) {
           tap to choose · or drop it here · jpg / png / heic
         </span>
       </button>
+
+      <CameraCapture
+        onCapture={(f) => handle(f)}
+        label="Take a photo"
+        className="mt-3 w-full rounded-full border-2 border-sun-1 px-6 py-3 font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform active:scale-95"
+      />
 
       <input
         ref={inputRef}

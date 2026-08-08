@@ -15,6 +15,7 @@ import { tweetUrl } from "@/lib/share/intent";
 import { uploadFrame } from "@/lib/blob/client";
 import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
 import { COLORS, SHARE } from "@/lib/brand";
+import CameraCapture from "./CameraCapture";
 
 const MAX = 4;
 const PREVIEW = 360;
@@ -67,7 +68,7 @@ export default function TeamMode() {
   }, [photos, names]);
 
   const addFiles = useCallback(
-    async (files?: FileList | null) => {
+    async (files?: FileList | File[] | null) => {
       if (!files || !files.length) return;
       setBusy("add");
       setNote(null);
@@ -151,6 +152,7 @@ export default function TeamMode() {
   return (
     <div className="flex flex-col items-center gap-5">
       {photos.length === 0 ? (
+        <div className="flex w-full flex-col gap-3">
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -191,6 +193,12 @@ export default function TeamMode() {
             pick up to 4 · jpg / png / heic
           </span>
         </button>
+        <CameraCapture
+          onCapture={(f) => addFiles([f])}
+          label="Take a photo"
+          className="w-full rounded-full border-2 border-sun-1 px-6 py-3 font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform active:scale-95"
+        />
+        </div>
       ) : (
         <>
           <canvas
