@@ -1,40 +1,47 @@
 import Image from "next/image";
-import { LINKS } from "@/lib/brand";
+import { EVENT, LINKS } from "@/lib/brand";
 
 export default function SiteHeader() {
   return (
-    <header className="flex items-center justify-between px-5 py-4">
+    <header className="relative z-20 flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <a
         href={LINKS.studioX}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="2:47 PM Studio on X"
+        aria-label={`${LINKS.studioName} on X`}
+        className="shrink-0"
       >
         <Image
           src="/brand/247-studio.png"
-          alt="2:47 PM Studio"
+          alt={LINKS.studioName}
           width={148}
           height={90}
           priority
           className="h-9 w-auto"
         />
       </a>
-      <nav className="flex items-center gap-3 sm:gap-5">
+
+      {/* centre stamp — edition lineage, the thing that makes this the 5th one */}
+      <span className="hidden rounded-full border-2 border-sun-1 px-4 py-1.5 font-mono text-[0.68rem] font-bold uppercase tracking-[0.18em] text-sun-1 md:inline-block">
+        {EVENT.editionLabel}
+      </span>
+
+      <nav className="flex shrink-0 items-center gap-2">
         <a
           href={LINKS.site}
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden font-mono text-xs uppercase tracking-widest text-cream/80 transition-colors hover:text-sun-1 sm:inline"
+          className="hh-btn hh-btn-paper hidden py-2 text-[0.7rem] sm:inline-flex"
         >
-          hhgoa.com ↗
+          hhgoa.com
         </a>
         <a
           href={LINKS.apply}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-full bg-sun-1 px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest text-goa-green-deep transition-transform active:scale-95"
+          className="hh-btn hh-btn-sun py-2 text-[0.7rem]"
         >
-          Apply
+          Apply now
         </a>
       </nav>
     </header>

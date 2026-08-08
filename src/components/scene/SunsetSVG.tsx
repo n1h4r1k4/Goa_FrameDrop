@@ -60,7 +60,14 @@ function Villa({ x, y }: { x: number; y: number }) {
   );
 }
 
-export default function SunsetSVG({ className = "" }: { className?: string }) {
+export default function SunsetSVG({
+  className = "",
+  /** "xMidYMax slice" lets the scene fill a wide, short hero band edge to edge. */
+  preserveAspectRatio,
+}: {
+  className?: string;
+  preserveAspectRatio?: string;
+}) {
   const palms = [
     { x: 24, y: 170, s: 1.45, flip: false },
     { x: 376, y: 170, s: 1.45, flip: true },
@@ -70,7 +77,13 @@ export default function SunsetSVG({ className = "" }: { className?: string }) {
   ];
 
   return (
-    <svg viewBox="0 0 400 170" className={className} fill="none" aria-hidden="true">
+    <svg
+      viewBox="0 0 400 170"
+      className={className}
+      preserveAspectRatio={preserveAspectRatio}
+      fill="none"
+      aria-hidden="true"
+    >
       {/* hills behind the horizon */}
       <path className="scene-el" d="M0,96 Q70,66 165,96 Z" fill={HILL} />
       <path className="scene-el" d="M235,96 Q320,64 400,96 Z" fill={HILL} />

@@ -25,94 +25,203 @@
   --font-deva: var(--font-baloo);
 }
 
-:root {
-  color-scheme: dark;
-  /* one knob for the whole poster look */
-  --ink-w: 3px;
-  --ink-r: 14px;
-}
+@layer base {
+  :root {
+    color-scheme: dark;
+    /* one knob each for the poster's line weight and corner radius */
+    --ink-w: 3px;
+    --ink-r: 14px;
+  }
 
-html,
-body {
-  height: 100%;
-}
+  html,
+  body {
+    height: 100%;
+  }
 
-body {
-  background-color: var(--color-goa-green);
-  color: var(--color-cream);
-  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
+  body {
+    background-color: var(--color-goa-green);
+    color: var(--color-cream);
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-::selection {
-  background: var(--color-sun-1);
-  color: var(--color-goa-green-deep);
-}
+  ::selection {
+    background: var(--color-sun-1);
+    color: var(--color-goa-green-deep);
+  }
 
-:focus-visible {
-  outline: 2px solid var(--color-pink-hot);
-  outline-offset: 3px;
-  border-radius: 2px;
+  :focus-visible {
+    outline: 2px solid var(--color-pink-hot);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
 }
 
 /* ---------------------------------------------------------------- poster kit
    Paper panels + hard ink borders + offset drop shadows. Everything on the page
-   is one of: panel, button, input, tape, pin. Keep it to these five. */
+   is one of: panel, button, input, tape, pin. Keep it to these five.
 
-.hh-panel {
-  background: var(--color-paper);
-  color: var(--color-ink);
-  border: var(--ink-w) solid var(--color-ink);
-  border-radius: var(--ink-r);
-  box-shadow: 7px 7px 0 var(--color-ink);
+   These live in @layer components on purpose: Tailwind's `utilities` layer is
+   declared after it, so a `border-sun-1` on a `.hh-btn` still wins. */
+@layer components {
+  .hh-panel {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    border: var(--ink-w) solid var(--color-ink);
+    border-radius: var(--ink-r);
+    box-shadow: 7px 7px 0 var(--color-ink);
+  }
+
+  /* pink pushpin that tacks a panel to the page */
+  .hh-pin {
+    position: absolute;
+    top: calc(var(--ink-w) * -1 - 5px);
+    left: 50%;
+    height: 12px;
+    width: 12px;
+    translate: -50% 0;
+    border-radius: 9999px;
+    background: var(--color-pink-hot);
+    box-shadow: 0 0 0 2px var(--color-ink);
+  }
+
+  /* diagonal hazard tape — section divider */
+  .hh-tape {
+    height: 14px;
+    border-top: var(--ink-w) solid var(--color-ink);
+    border-bottom: var(--ink-w) solid var(--color-ink);
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--color-sun-1) 0 11px,
+      var(--color-pink-hot) 11px 22px
+    );
+  }
+
+  /* chunky pressable button */
+  .hh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: var(--ink-w) solid var(--color-ink);
+    border-radius: 10px;
+    box-shadow: 4px 4px 0 var(--color-ink);
+    padding: 0.7rem 1.1rem;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    transition:
+      translate 0.12s ease,
+      box-shadow 0.12s ease;
+  }
+  .hh-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .hh-btn-sun {
+    background: var(--color-sun-1);
+    color: var(--color-ink);
+  }
+  .hh-btn-pink {
+    background: var(--color-pink-hot);
+    color: #fff;
+  }
+  .hh-btn-paper {
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+  }
+  .hh-btn-ink {
+    background: var(--color-goa-green-deep);
+    color: var(--color-cream);
+  }
+
+  .hh-input {
+    width: 100%;
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+    border: 2px solid var(--color-ink);
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.9rem;
+  }
+  .hh-input::placeholder {
+    color: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  }
+  .hh-input:focus {
+    outline: none;
+    box-shadow: 3px 3px 0 var(--color-pink-hot);
+  }
+
+  /* display serif headings (Imbue) */
+  .hh-h {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 0.86;
+    letter-spacing: 0.005em;
+  }
+
+  /* small mono label above a control */
+  .hh-label {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  /* range slider drawn in the same ink language */
+  .hh-range {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 10px;
+    border: 2px solid var(--color-ink);
+    border-radius: 9999px;
+    background: var(--color-paper-2);
+  }
+  .hh-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 9999px;
+    background: var(--color-pink-hot);
+    border: 2px solid var(--color-ink);
+    cursor: pointer;
+  }
+  .hh-range::-moz-range-thumb {
+    height: 18px;
+    width: 18px;
+    border-radius: 9999px;
+    background: var(--color-pink-hot);
+    border: 2px solid var(--color-ink);
+    cursor: pointer;
+  }
+
+  /* sticker-style गोवा wordmark: pink fill, cream outline, ink depth */
+  .deva-sticker {
+    color: var(--color-pink-hot);
+    -webkit-text-stroke: 0.055em var(--color-cream);
+    paint-order: stroke;
+    text-shadow:
+      0.018em 0.05em 0 var(--color-ink),
+      0 0 0.02em var(--color-ink);
+  }
+
+  /* interactive canvas should own touch gestures (pan/pinch) */
+  .canvas-surface {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
-/* pink pushpin that tacks a panel to the page */
-.hh-pin {
-  position: absolute;
-  top: calc(var(--ink-w) * -1 - 5px);
-  left: 50%;
-  height: 12px;
-  width: 12px;
-  translate: -50% 0;
-  border-radius: 9999px;
-  background: var(--color-pink-hot);
-  box-shadow: 0 0 0 2px var(--color-ink);
-}
-
-/* diagonal hazard tape — section divider */
-.hh-tape {
-  height: 14px;
-  border-top: var(--ink-w) solid var(--color-ink);
-  border-bottom: var(--ink-w) solid var(--color-ink);
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--color-sun-1) 0 11px,
-    var(--color-pink-hot) 11px 22px
-  );
-}
-
-/* chunky pressable button */
-.hh-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: var(--ink-w) solid var(--color-ink);
-  border-radius: 10px;
-  box-shadow: 4px 4px 0 var(--color-ink);
-  padding: 0.7rem 1.1rem;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.8rem;
-  font-weight: 700;
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  transition:
-    translate 0.12s ease,
-    box-shadow 0.12s ease;
-}
 @media (prefers-reduced-motion: no-preference) {
   .hh-btn:hover:not(:disabled) {
     translate: -2px -2px;
@@ -122,114 +231,6 @@ body {
     translate: 2px 2px;
     box-shadow: 1px 1px 0 var(--color-ink);
   }
-}
-.hh-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-.hh-btn-sun {
-  background: var(--color-sun-1);
-  color: var(--color-ink);
-}
-.hh-btn-pink {
-  background: var(--color-pink-hot);
-  color: #fff;
-}
-.hh-btn-paper {
-  background: var(--color-paper-2);
-  color: var(--color-ink);
-}
-.hh-btn-ink {
-  background: var(--color-goa-green-deep);
-  color: var(--color-cream);
-}
-
-.hh-input {
-  width: 100%;
-  background: var(--color-paper-2);
-  color: var(--color-ink);
-  border: 2px solid var(--color-ink);
-  border-radius: 10px;
-  padding: 0.65rem 0.85rem;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.9rem;
-}
-.hh-input::placeholder {
-  color: color-mix(in srgb, var(--color-ink) 45%, transparent);
-}
-.hh-input:focus {
-  outline: none;
-  box-shadow: 3px 3px 0 var(--color-pink-hot);
-}
-
-/* display serif headings (Imbue) */
-.hh-h {
-  font-family: var(--font-display), Georgia, serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  line-height: 0.86;
-  letter-spacing: 0.005em;
-}
-
-/* small mono label above a control */
-.hh-label {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-}
-
-/* range slider drawn in the same ink language */
-.hh-range {
-  appearance: none;
-  width: 100%;
-  height: 10px;
-  border: 2px solid var(--color-ink);
-  border-radius: 9999px;
-  background: var(--color-paper-2);
-}
-.hh-range::-webkit-slider-thumb {
-  appearance: none;
-  height: 20px;
-  width: 20px;
-  border-radius: 9999px;
-  background: var(--color-pink-hot);
-  border: 2px solid var(--color-ink);
-  cursor: pointer;
-}
-.hh-range::-moz-range-thumb {
-  height: 18px;
-  width: 18px;
-  border-radius: 9999px;
-  background: var(--color-pink-hot);
-  border: 2px solid var(--color-ink);
-  cursor: pointer;
-}
-
-/* sticker-style गोवा wordmark: pink fill, cream outline, deep-green depth */
-.deva-sticker {
-  color: var(--color-pink-hot);
-  -webkit-text-stroke: 0.055em var(--color-cream);
-  paint-order: stroke;
-  text-shadow:
-    0.018em 0.05em 0 var(--color-ink),
-    0 0 0.02em var(--color-ink);
-}
-
-/* hand-drawn pink underline under the hero wordmark */
-.hh-swoosh {
-  display: block;
-  width: 100%;
-  height: auto;
-  color: var(--color-pink-hot);
-}
-
-/* interactive canvas should own touch gestures (pan/pinch) */
-.canvas-surface {
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 /* "photo drops into the frame" settle when a new photo mounts */

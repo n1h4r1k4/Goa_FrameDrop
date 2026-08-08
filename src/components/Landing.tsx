@@ -3,10 +3,10 @@
 import { useRef } from "react";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
+import Hero from "./Hero";
 import Generator from "./Generator";
-import SunsetSVG from "./scene/SunsetSVG";
+import NoticeBoard from "./NoticeBoard";
 import SideDecor from "./scene/SideDecor";
-import { EVENT, WORDMARK, SHARE } from "@/lib/brand";
 
 gsap.registerPlugin(useGSAP);
 
@@ -68,8 +68,13 @@ export default function Landing() {
               { autoAlpha: 0, scale: 0.5, transformOrigin: "50% 50%" },
               "<0.15",
             )
-            .from(".sub", { autoAlpha: 0, y: 10, stagger: 0.1 }, "-=0.25")
-            .from(".tagline", { autoAlpha: 0, y: 10 }, "<")
+            // the pink underline draws itself in from the left
+            .from(
+              ".tagline",
+              { autoAlpha: 0, scaleX: 0.2, transformOrigin: "0% 50%" },
+              "-=0.3",
+            )
+            .from(".sub", { autoAlpha: 0, y: 10, stagger: 0.1 }, "<")
             .from(".tool", { autoAlpha: 0, y: 28, duration: 0.55 }, "-=0.1");
         },
       );
@@ -78,45 +83,14 @@ export default function Landing() {
   );
 
   return (
-    <main
-      ref={root}
-      className="relative flex flex-1 flex-col items-center px-5 py-8 sm:py-10"
-    >
+    <main ref={root} className="relative flex flex-1 flex-col">
       <SideDecor />
-
-      <p className="sub mb-4 font-mono text-[0.7rem] uppercase tracking-[0.3em] text-cream/70">
-        {EVENT.location} · {EVENT.dates}
-      </p>
-
-      <h1
-        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center font-display font-black uppercase leading-[0.82] text-sun-1"
-        style={{ fontSize: "clamp(3rem, 15vw, 9rem)" }}
-      >
-        <span className="hk-line">{WORDMARK.line1}</span>
-        <span
-          className="hk-line deva deva-sticker font-deva leading-none"
-          style={{ fontSize: "0.6em" }}
-        >
-          {WORDMARK.deva}
-        </span>
-        <span className="hk-line">{WORDMARK.line2}</span>
-      </h1>
-
-      <div className="pointer-events-none -mt-1 w-full max-w-3xl">
-        <SunsetSVG className="w-full" />
-      </div>
-
-      <p className="tagline mt-3 font-mono text-sm text-cream/80">
-        {EVENT.tagline}
-      </p>
-      <p className="sub mt-2 max-w-sm text-center font-mono text-xs text-cream/55">
-        Frame your photo for the 5th edition on the sand. Share it with{" "}
-        <span className="text-sun-1">#{SHARE.hashtag}</span>.
-      </p>
-
-      <div className="tool w-full">
+      <Hero />
+      <div className="hh-tape" />
+      <div className="tool">
         <Generator />
       </div>
+      <NoticeBoard />
     </main>
   );
 }
