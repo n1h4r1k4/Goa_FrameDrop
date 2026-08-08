@@ -9,12 +9,14 @@ import { DEFAULT_PLACEMENT, type Placement } from "@/lib/canvas/transform";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Identity } from "@/lib/canvas/compose";
 import type { FrameStyle } from "@/lib/canvas/styles";
+import type { FrameShape } from "@/lib/canvas/shapes";
 import { builderClass } from "@/lib/badge";
 
 export default function Generator() {
   const [photo, setPhoto] = useState<DecodedPhoto | null>(null);
   const [placement, setPlacement] = useState<Placement>(DEFAULT_PLACEMENT);
   const [style, setStyle] = useState<FrameStyle>("sunset");
+  const [shape, setShape] = useState<FrameShape>("square");
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
 
@@ -44,6 +46,7 @@ export default function Generator() {
             placement={placement}
             identity={identity}
             style={style}
+            shape={shape}
             onPlacementChange={setPlacement}
           />
           <FrameControls
@@ -53,6 +56,8 @@ export default function Generator() {
             onChangePhoto={() => setPhoto(null)}
             style={style}
             onStyle={setStyle}
+            shape={shape}
+            onShape={setShape}
             name={name}
             handle={handle}
             onName={setName}
@@ -64,6 +69,7 @@ export default function Generator() {
             placement={placement}
             identity={identity}
             style={style}
+            shape={shape}
           />
         </div>
       )}

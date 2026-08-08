@@ -10,12 +10,14 @@ import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Placement } from "@/lib/canvas/transform";
 import type { Identity } from "@/lib/canvas/compose";
 import type { FrameStyle } from "@/lib/canvas/styles";
+import { SHAPE, type FrameShape } from "@/lib/canvas/shapes";
 
 type Props = {
   photo: DecodedPhoto;
   placement: Placement;
   identity: Identity;
   style: FrameStyle;
+  shape: FrameShape;
 };
 
 export default function ResultActions({
@@ -23,7 +25,9 @@ export default function ResultActions({
   placement,
   identity,
   style,
+  shape,
 }: Props) {
+  const fileName = `${SHAPE[shape].fileName}.png`;
   const [busy, setBusy] = useState<null | "download" | "share">(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -38,6 +42,7 @@ export default function ResultActions({
       placement,
       identity,
       style,
+      shape,
     });
     blobRef.current = blob;
     dirtyRef.current = false;
@@ -61,6 +66,7 @@ export default function ResultActions({
     identity.handle,
     identity.builderClass,
     style,
+    shape,
   ]);
 
   const onDownload = async () => {
@@ -69,7 +75,7 @@ export default function ResultActions({
     try {
       const blob =
         !dirtyRef.current && blobRef.current ? blobRef.current : await build();
-      downloadBlob(blob);
+      downloadBlob(blob, fileName);
     } catch {
       setNote("Couldn't render — try a smaller photo.");
     } finally {
@@ -100,7 +106,7 @@ export default function ResultActions({
         } catch {
           // Blob not configured / offline: text intent + hand them the file.
           window.open(tweetUrl(), "_blank", "noopener,noreferrer");
-          downloadBlob(blob);
+          downloadBlob(blob, fileName);
           setNote("Opened X — image downloaded so you can attach it to the post.");
         }
       }

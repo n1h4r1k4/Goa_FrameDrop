@@ -2,6 +2,7 @@
 
 import { COLORS } from "@/lib/brand";
 import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
+import { FRAME_SHAPES, SHAPE, type FrameShape } from "@/lib/canvas/shapes";
 
 type Props = {
   scale: number;
@@ -10,12 +11,21 @@ type Props = {
   onChangePhoto: () => void;
   style: FrameStyle;
   onStyle: (s: FrameStyle) => void;
+  shape: FrameShape;
+  onShape: (s: FrameShape) => void;
   name: string;
   handle: string;
   onName: (v: string) => void;
   onHandle: (v: string) => void;
   builderClass?: string;
 };
+
+const pill = (active: boolean) =>
+  `rounded-full px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors ${
+    active
+      ? "bg-sun-1 text-goa-green-deep"
+      : "border border-cream/25 text-cream/75 hover:border-sun-1/70"
+  }`;
 
 export default function FrameControls({
   scale,
@@ -24,6 +34,8 @@ export default function FrameControls({
   onChangePhoto,
   style,
   onStyle,
+  shape,
+  onShape,
   name,
   handle,
   onName,
@@ -32,30 +44,43 @@ export default function FrameControls({
 }: Props) {
   return (
     <div className="flex w-full flex-col gap-4">
-      {/* style picker */}
+      {/* frame shape */}
+      <div className="flex flex-col gap-2">
+        <span className="font-mono text-xs uppercase tracking-widest text-cream/60">
+          Frame
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {FRAME_SHAPES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onShape(s)}
+              aria-pressed={s === shape}
+              className={pill(s === shape)}
+            >
+              {SHAPE[s].label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* style */}
       <div className="flex items-center gap-2">
         <span className="font-mono text-xs uppercase tracking-widest text-cream/60">
           Style
         </span>
         <div className="flex flex-1 gap-2">
-          {FRAME_STYLES.map((s) => {
-            const active = s === style;
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => onStyle(s)}
-                aria-pressed={active}
-                className={`flex-1 rounded-full px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors ${
-                  active
-                    ? "bg-sun-1 text-goa-green-deep"
-                    : "border border-cream/25 text-cream/75 hover:border-sun-1/70"
-                }`}
-              >
-                {STYLE[s].label}
-              </button>
-            );
-          })}
+          {FRAME_STYLES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onStyle(s)}
+              aria-pressed={s === style}
+              className={`flex-1 ${pill(s === style)}`}
+            >
+              {STYLE[s].label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -105,8 +130,7 @@ export default function FrameControls({
       <div className="flex items-center justify-between">
         {builderClass ? (
           <span className="font-mono text-xs text-cream/70">
-            class:{" "}
-            <span className="text-sun-1">// {builderClass.toUpperCase()}</span>
+            class: <span className="text-sun-1">// {builderClass.toUpperCase()}</span>
           </span>
         ) : (
           <span className="font-mono text-xs text-cream/40">

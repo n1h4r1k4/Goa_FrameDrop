@@ -8,9 +8,9 @@ import {
   type Placement,
   type PhotoSize,
 } from "@/lib/canvas/transform";
-import { PREVIEW_SIZE } from "@/lib/canvas/constants";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
 import type { FrameStyle } from "@/lib/canvas/styles";
+import { SHAPE, type FrameShape } from "@/lib/canvas/shapes";
 
 type Props = {
   photo: CanvasImageSource;
@@ -18,6 +18,7 @@ type Props = {
   placement: Placement;
   identity?: Identity;
   style?: FrameStyle;
+  shape?: FrameShape;
   onPlacementChange: (p: Placement) => void;
 };
 
@@ -29,35 +30,41 @@ export default function FrameCanvas({
   placement,
   identity,
   style,
+  shape = "square",
   onPlacementChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const placementRef = useRef(placement);
   placementRef.current = placement;
+  const cfg = SHAPE[shape];
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const cssW = canvas.clientWidth || 340;
+    const cssH = cssW * (cfg.h / cfg.w);
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const side = Math.round(PREVIEW_SIZE * dpr);
-    if (canvas.width !== side) {
-      canvas.width = side;
-      canvas.height = side;
+    const w = Math.round(cssW * dpr);
+    const h = Math.round(cssH * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
     }
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     compose({
       ctx,
-      side,
+      w,
+      h,
       photo,
       photoSize,
       placement: placementRef.current,
       identity,
       style,
+      shape,
     });
-  }, [photo, photoSize, identity, style]);
+  }, [photo, photoSize, identity, style, shape, cfg.h, cfg.w]);
 
-  // redraw once fonts are ready, and whenever inputs change
   useEffect(() => {
     ensureFontsLoaded().then(draw);
   }, [draw]);
@@ -65,14 +72,20 @@ export default function FrameCanvas({
     draw();
   }, [placement, draw]);
 
-  // pointer pan + pinch/wheel zoom
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const pointers = new Map<number, { x: number; y: number }>();
     let lastDist = 0;
 
-    const cssSide = () => canvas.getBoundingClientRect().width || PREVIEW_SIZE;
+    const winSize = () => {
+      const cssW = canvas.getBoundingClientRect().width || 340;
+      const cssH = cssW * (cfg.h / cfg.w);
+      return {
+        w: (cfg.window.w / cfg.w) * cssW,
+        h: (cfg.window.h / cfg.h) * cssH,
+      };
+    };
 
     const onDown = (e: PointerEvent) => {
       canvas.setPointerCapture(e.pointerId);
@@ -84,10 +97,11 @@ export default function FrameCanvas({
       const cur = { x: e.clientX, y: e.clientY };
       pointers.set(e.pointerId, cur);
       const p = placementRef.current;
-
       if (pointers.size === 1) {
+        const win = winSize();
         const { dOffsetX, dOffsetY } = panToOffsetDelta(
-          cssSide(),
+          win.w,
+          win.h,
           photoSize,
           p,
           cur.x - prev.x,
@@ -122,8 +136,10 @@ export default function FrameCanvas({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const p = placementRef.current;
-      const factor = e.deltaY < 0 ? 1.06 : 0.94;
-      onPlacementChange({ ...p, scale: clamp(p.scale * factor, 1, MAX_ZOOM) });
+      onPlacementChange({
+        ...p,
+        scale: clamp(p.scale * (e.deltaY < 0 ? 1.06 : 0.94), 1, MAX_ZOOM),
+      });
     };
 
     canvas.addEventListener("pointerdown", onDown);
@@ -138,13 +154,17 @@ export default function FrameCanvas({
       canvas.removeEventListener("pointercancel", onUp);
       canvas.removeEventListener("wheel", onWheel);
     };
-  }, [photoSize, onPlacementChange]);
+  }, [photoSize, onPlacementChange, cfg]);
 
   return (
     <canvas
       ref={canvasRef}
       aria-label="Your HH Goa 2026 frame preview — drag to reposition, pinch or scroll to zoom"
-      className="canvas-surface settle aspect-square w-full max-w-[360px] cursor-grab touch-none rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] active:cursor-grabbing"
+      className="canvas-surface settle w-full cursor-grab touch-none rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] active:cursor-grabbing"
+      style={{
+        aspectRatio: `${cfg.w} / ${cfg.h}`,
+        maxWidth: cfg.mode === "badge" ? 320 : cfg.h === 630 ? 460 : 360,
+      }}
     />
   );
 }
