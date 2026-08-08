@@ -148,8 +148,20 @@ export default function ResultActions({
           finalized,
         });
         const card = await renderShareCardToBlob({ pass, style, identity });
+        // the QR side, so the shared link can flip too
+        const backBlob = await renderToBlob({
+          photo: photo.bitmap,
+          photoSize: photo.size,
+          placement,
+          identity,
+          style,
+          shape,
+          overlay,
+          finalized,
+          back: true,
+        });
         // blob = the pass (shown on /s), card = the plate (the link preview)
-        const { shareId } = await uploadFrame(blob, card);
+        const { shareId } = await uploadFrame(blob, card, backBlob);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`);
         hosted = true;
       } catch {

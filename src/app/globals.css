@@ -316,6 +316,21 @@
     }
   }
 
+  /* two-sided card on the shared link — same easing as the in-app GSAP flip */
+  .hh-flip {
+    transform-style: preserve-3d;
+    transform: rotateY(0deg);
+    transition: transform 0.85s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .hh-flip[data-flipped] {
+    transform: rotateY(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hh-flip {
+      transition: none;
+    }
+  }
+
   /* interactive canvas should own touch gestures (pan/pinch) */
   .canvas-surface {
     touch-action: none;

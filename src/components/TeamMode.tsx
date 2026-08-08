@@ -352,8 +352,16 @@ export default function TeamMode() {
           identity: crewIdentity,
           label: "CREW PASS",
         });
+        // the QR side, so the shared link can flip too
+        const backBlob = await renderCardBackToBlob({
+          w: 1200,
+          h: 1200,
+          identity: crewIdentity,
+          style,
+          label: "CREW PASS",
+        });
         // blob = the pass (shown on /s), card = the plate (the link preview)
-        const { shareId } = await uploadFrame(blob, card);
+        const { shareId } = await uploadFrame(blob, card, backBlob);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`, CAPTION);
         hosted = true;
       } catch {

@@ -49,16 +49,22 @@ export function encodeShareId(url: string): string {
  * shows), `og` is the 1200×630 plate the link preview points at. Older shares
  * only stored one image, so both fall back to it.
  */
-export type ShareImages = { pass: string; og: string };
+export type ShareImages = { pass: string; og: string; back: string | null };
 
 export function shareImages(id: string): ShareImages | null {
   const compact = COMPACT.exec(id);
   if (compact) {
     const base = `https://${compact[1]}${HOST_SUFFIX}/${DIR}/${compact[2]}`;
     // Our own stems are nanoid(10). Anything longer is a pre-plate share whose
-    // pathname carried Blob's random suffix — it has no -og twin.
-    const hasPlate = compact[2].length <= 12;
-    return { pass: `${base}.png`, og: `${base}${hasPlate ? "-og" : ""}.png` };
+    // pathname carried Blob's random suffix — it has no -og/-back twin.
+    const twins = compact[2].length <= 12;
+    return {
+      pass: `${base}.png`,
+      og: `${base}${twins ? "-og" : ""}.png`,
+      // shares made before the flip existed 404 here; the page probes it and
+      // simply hides the button
+      back: twins ? `${base}-back.png` : null,
+    };
   }
   // legacy base64 ids — validate the host, since the URL came from the id
   try {
@@ -66,7 +72,7 @@ export function shareImages(id: string): ShareImages | null {
     const u = new URL(fromBase64(b64));
     if (u.protocol !== "https:") return null;
     if (!u.hostname.endsWith(".blob.vercel-storage.com")) return null;
-    return { pass: u.toString(), og: u.toString() };
+    return { pass: u.toString(), og: u.toString(), back: null };
   } catch {
     return null;
   }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { shareImages } from "@/lib/share/shareId";
+import SharedCard from "@/components/SharedCard";
 import { SHARE_CARD } from "@/lib/canvas/export";
 import { SHARE, LINKS, EVENT } from "@/lib/brand";
 
@@ -57,7 +58,7 @@ export default async function SharePage({
   const { id } = await params;
   // the page shows the pass itself, at its own aspect — the plate is only ever
   // for the link preview
-  const imageUrl = shareImages(id)?.pass ?? null;
+  const images = shareImages(id);
 
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-12">
@@ -65,12 +66,8 @@ export default async function SharePage({
         {EVENT.location} · {EVENT.dates}
       </p>
 
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt="HH Goa 2026 pass"
-          className="h-auto w-full max-w-[460px] rounded-xl border-[3px] border-ink shadow-[7px_7px_0_var(--color-ink)]"
-        />
+      {images ? (
+        <SharedCard front={images.pass} back={images.back} />
       ) : (
         <p className="hh-panel px-5 py-4 font-mono text-sm">
           This frame link has expired or is invalid.
