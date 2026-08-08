@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* HH Goa 2026 palette (mirror of src/lib/brand.ts) */
+@theme {
+  --color-goa-green: #0b6839;
+  --color-goa-green-deep: #0a2a18;
+  --color-sun-1: #fee101;
+  --color-sun-2: #edd723;
+  --color-sun-3: #f9dc01;
+  --color-cream: #fffbe8;
+  --color-goa-red: #e2231a;
+}
+
+/* Fonts from next/font (values set on <html>) */
+@theme inline {
+  --font-display: var(--font-imbue);
+  --font-mono: var(--font-victor-mono);
+  --font-deva: var(--font-deva);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-goa-green);
+  color: var(--color-cream);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-sun-1);
+  color: var(--color-goa-green-deep);
+}
+
+/* interactive canvas should own touch gestures (pan/pinch) */
+.canvas-surface {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
