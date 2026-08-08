@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { LINKS } from "@/lib/brand";
 
 export default function SiteHeader() {
@@ -7,15 +8,16 @@ export default function SiteHeader() {
         href={LINKS.studioX}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-baseline gap-1.5"
         aria-label="2:47 PM Studio on X"
       >
-        <span className="font-mono text-lg font-bold leading-none text-sun-1">
-          2:47
-        </span>
-        <span className="font-mono text-[0.6rem] uppercase tracking-widest text-cream/80">
-          PM Studio
-        </span>
+        <Image
+          src="/brand/247-studio.png"
+          alt="2:47 PM Studio"
+          width={148}
+          height={90}
+          priority
+          className="h-9 w-auto"
+        />
       </a>
       <nav className="flex items-center gap-3 sm:gap-5">
         <a

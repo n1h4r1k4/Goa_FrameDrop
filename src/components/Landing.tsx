@@ -107,7 +107,7 @@ export default function Landing() {
         {EVENT.tagline}
       </p>
       <p className="sub mt-2 max-w-sm text-center font-mono text-xs text-cream/55">
-        Frame your photo for the 5th edition on the sand — share it with{" "}
+        Frame your photo for the 5th edition on the sand. Share it with{" "}
         <span className="text-sun-1">#{SHARE.hashtag}</span>.
       </p>
 

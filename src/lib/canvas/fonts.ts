@@ -13,9 +13,9 @@ function cssVar(name: string, fallback: string): string {
 }
 
 export const FONT = {
-  display: () => cssVar("--font-imbue", "Georgia, serif"),
+  display: () => cssVar("--font-baloo", "system-ui, sans-serif"),
   mono: () => cssVar("--font-victor-mono", "ui-monospace, monospace"),
-  deva: () => cssVar("--font-deva", "system-ui, sans-serif"),
+  deva: () => cssVar("--font-baloo", "system-ui, sans-serif"),
 };
 
 /** Ensure the brand faces are loaded so canvas text doesn't fall back to a system font. */

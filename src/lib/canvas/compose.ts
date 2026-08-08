@@ -1,14 +1,20 @@
 /**
- * Shape- + style-aware compositor. `mode:"bleed"` (square/circle/landscape) fills the
- * canvas with the photo and overlays the sunset scene; `mode:"badge"` (tall/arch) puts
- * the photo in a clean window with an illustrated frame + cream name panel.
+ * Shape- + style-aware compositor. Simplistic look: the PHOTO is the hero (never
+ * covered by scenery) inside a pink double-border; branding sits at the edges
+ * (title top, meta bottom) or, for badges, in a cream name panel.
  * Same function drives preview and export. See frame-generator + hhgoa-brand skills.
  */
-import { COLORS, EVENT, SHARE, LINKS } from "@/lib/brand";
+import { COLORS, EVENT, SHARE } from "@/lib/brand";
 import { coverRectIn, type Placement, type PhotoSize } from "./transform";
 import { FONT } from "./fonts";
 import { STYLE, type FrameStyle, type StyleConfig } from "./styles";
 import { SHAPE, type FrameShape } from "./shapes";
+
+const PINK = COLORS.pink;
+const CREAM = COLORS.cream;
+const SUN = COLORS.sun1;
+const GREEN = COLORS.goaGreen;
+const DEEP = COLORS.goaGreenDeep;
 
 export type Identity = { name?: string; handle?: string; builderClass?: string };
 
@@ -24,12 +30,21 @@ export type ComposeInput = {
   shape?: FrameShape;
 };
 
+type Win = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  kind: string;
+  radius: number;
+};
+
 export function compose(input: ComposeInput): void {
   const { ctx, w, h, photo, photoSize, placement, identity } = input;
   const shapeCfg = SHAPE[input.shape ?? "square"];
   const cfg = STYLE[input.style ?? "sunset"];
   const k = w / shapeCfg.w;
-  const win = {
+  const win: Win = {
     x: shapeCfg.window.x * k,
     y: shapeCfg.window.y * k,
     w: shapeCfg.window.w * k,
@@ -39,7 +54,7 @@ export function compose(input: ComposeInput): void {
   };
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = COLORS.goaGreen;
+  ctx.fillStyle = GREEN;
   ctx.fillRect(0, 0, w, h);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
@@ -47,11 +62,11 @@ export function compose(input: ComposeInput): void {
   if (shapeCfg.mode === "badge") {
     composeBadge(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity, shapeCfg);
   } else {
-    composeBleed(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity, shapeCfg);
+    composeBleed(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity);
   }
 }
 
-// ---------- primitives ----------
+// ---------- path helpers ----------
 
 function roundRectPath(
   ctx: CanvasRenderingContext2D,
@@ -61,7 +76,7 @@ function roundRectPath(
   h: number,
   r: number,
 ): void {
-  const rr = Math.min(r, w / 2, h / 2);
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
   ctx.beginPath();
   ctx.moveTo(x + rr, y);
   ctx.arcTo(x + w, y, x + w, y + h, rr);
@@ -91,25 +106,143 @@ function archPath(
   ctx.closePath();
 }
 
-function windowPath(
-  ctx: CanvasRenderingContext2D,
-  win: { x: number; y: number; w: number; h: number; kind: string; radius: number },
-): void {
+function windowPath(ctx: CanvasRenderingContext2D, win: Win, inset = 0): void {
   if (win.kind === "circle") {
     ctx.beginPath();
-    ctx.arc(win.x + win.w / 2, win.y + win.h / 2, win.w / 2, 0, Math.PI * 2);
+    ctx.arc(win.x + win.w / 2, win.y + win.h / 2, win.w / 2 - inset, 0, Math.PI * 2);
     ctx.closePath();
   } else if (win.kind === "arch") {
-    archPath(ctx, win.x, win.y, win.w, win.h);
+    archPath(ctx, win.x + inset, win.y + inset, win.w - inset * 2, win.h - inset * 2);
   } else {
-    roundRectPath(ctx, win.x, win.y, win.w, win.h, win.radius);
+    roundRectPath(
+      ctx,
+      win.x + inset,
+      win.y + inset,
+      win.w - inset * 2,
+      win.h - inset * 2,
+      Math.max(0, win.radius - inset),
+    );
   }
 }
 
 const truncate = (s: string, n: number) =>
   s.length > n ? s.slice(0, n - 1) + "…" : s;
 
-function drawPalmAt(
+// ---------- decorative helpers ----------
+
+function drawGrid(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  u: number,
+): void {
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,251,232,0.05)";
+  ctx.lineWidth = Math.max(1, u * 1.4);
+  const step = w / 12;
+  for (let gx = x; gx <= x + w + 1; gx += step) {
+    ctx.beginPath();
+    ctx.moveTo(gx, y);
+    ctx.lineTo(gx, y + h);
+    ctx.stroke();
+  }
+  for (let gy = y; gy <= y + h + 1; gy += step) {
+    ctx.beginPath();
+    ctx.moveTo(x, gy);
+    ctx.lineTo(x + w, gy);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function pinkBorderWindow(ctx: CanvasRenderingContext2D, win: Win, W: number): void {
+  windowPath(ctx, win, 0);
+  ctx.lineWidth = W * 0.016;
+  ctx.strokeStyle = PINK;
+  ctx.stroke();
+  windowPath(ctx, win, W * 0.026);
+  ctx.lineWidth = Math.max(1, W * 0.006);
+  ctx.strokeStyle = PINK;
+  ctx.stroke();
+}
+
+function pinkBorderRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+  W: number,
+): void {
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.lineWidth = W * 0.016;
+  ctx.strokeStyle = PINK;
+  ctx.stroke();
+  const g = W * 0.022;
+  roundRectPath(ctx, x + g, y + g, w - g * 2, h - g * 2, Math.max(0, r - g));
+  ctx.lineWidth = Math.max(1, W * 0.006);
+  ctx.strokeStyle = PINK;
+  ctx.stroke();
+}
+
+function drawSmallSun(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  r: number,
+): void {
+  ctx.save();
+  ctx.fillStyle = SUN;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.62, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = SUN;
+  ctx.lineWidth = Math.max(1, r * 0.13);
+  ctx.lineCap = "round";
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r * 0.82, cy + Math.sin(a) * r * 0.82);
+    ctx.lineTo(cx + Math.cos(a) * r * 1.08, cy + Math.sin(a) * r * 1.08);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Cream name tag with pink border + deep-green text. Returns its width. */
+function drawNamePill(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  cy: number,
+  text: string,
+  u: number,
+  align: "left" | "center" = "left",
+  cx = 0,
+): number {
+  const t = text.toUpperCase();
+  ctx.font = `700 ${u * 26}px ${FONT.display()}`;
+  const tw = ctx.measureText(t).width;
+  const px = u * 18;
+  const h = u * 46;
+  const w = tw + px * 2;
+  const left = align === "center" ? cx - w / 2 : x;
+  roundRectPath(ctx, left, cy - h / 2, w, h, h / 2);
+  ctx.fillStyle = CREAM;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, u * 3.5);
+  ctx.strokeStyle = PINK;
+  ctx.stroke();
+  ctx.fillStyle = DEEP;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(t, left + px, cy + u * 1);
+  return w;
+}
+
+function palm(
   ctx: CanvasRenderingContext2D,
   bx: number,
   by: number,
@@ -126,168 +259,26 @@ function drawPalmAt(
   ctx.lineJoin = "round";
   const tx = h * 0.16;
   const ty = -h;
-  ctx.lineWidth = Math.max(2, h * 0.045);
+  ctx.lineWidth = Math.max(2, h * 0.05);
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.quadraticCurveTo(-h * 0.05, -h * 0.55, tx, ty);
   ctx.stroke();
   const fronds: Array<[number, number]> = [
     [-0.95, 0.9],
-    [-0.55, 1.05],
-    [-0.1, 1.05],
-    [0.4, 0.95],
+    [-0.5, 1.05],
+    [-0.05, 1.05],
+    [0.45, 0.95],
     [0.85, 0.75],
   ];
-  const L = h * 0.6;
+  const L = h * 0.58;
   for (const [dir, up] of fronds) {
-    ctx.lineWidth = Math.max(2, h * 0.03);
-    const ex = tx + dir * L;
-    const ey = ty + L * 0.28;
-    const cx = tx + dir * L * 0.45;
-    const cy = ty - up * h * 0.18;
+    ctx.lineWidth = Math.max(2, h * 0.035);
     ctx.beginPath();
     ctx.moveTo(tx, ty);
-    ctx.quadraticCurveTo(cx, cy, ex, ey);
+    ctx.quadraticCurveTo(tx + dir * L * 0.45, ty - up * h * 0.18, tx + dir * L, ty + L * 0.28);
     ctx.stroke();
   }
-  ctx.beginPath();
-  ctx.arc(tx - h * 0.03, ty + h * 0.03, h * 0.03, 0, Math.PI * 2);
-  ctx.arc(tx + h * 0.05, ty + h * 0.05, h * 0.028, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawCelestial(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  hy: number,
-  r: number,
-  cfg: StyleConfig,
-): void {
-  const glow = ctx.createRadialGradient(cx, hy, r * 0.2, cx, hy, r * 3.2);
-  glow.addColorStop(0, cfg.glow);
-  glow.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(cx - r * 3.2, hy - r * 3.2, r * 6.4, r * 3.4);
-
-  const g = ctx.createLinearGradient(cx, hy - r, cx, hy);
-  g.addColorStop(0, cfg.celestialTop);
-  g.addColorStop(1, cfg.celestialBottom);
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, hy, r, Math.PI, 0);
-  ctx.closePath();
-  ctx.fillStyle = g;
-  ctx.fill();
-  if (cfg.celestial === "sun") {
-    ctx.globalCompositeOperation = "destination-out";
-    const sh = r * 0.11;
-    for (let i = 1; i <= 3; i++) ctx.fillRect(cx - r, hy - r * (i * 0.26), r * 2, sh);
-  }
-  ctx.restore();
-
-  if (cfg.rays) {
-    ctx.save();
-    ctx.strokeStyle = "rgba(254,225,1,0.5)";
-    ctx.lineCap = "round";
-    for (let i = -3; i <= 3; i++) {
-      const a = -Math.PI / 2 + i * 0.28;
-      ctx.lineWidth = Math.max(1.5, r * 0.05);
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(a) * r * 1.2, hy + Math.sin(a) * r * 1.2);
-      ctx.lineTo(cx + Math.cos(a) * r * 1.75, hy + Math.sin(a) * r * 1.75);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-}
-
-/** Beach scene within a region (x,y,w,h) with horizon near the bottom. */
-function drawSceneRegion(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  cfg: StyleConfig,
-  palms = true,
-): void {
-  const hy = y + h * 0.72;
-  const cx = x + w / 2;
-  const r = Math.min(w, h) * 0.14;
-
-  if (cfg.stars) {
-    ctx.save();
-    ctx.fillStyle = "rgba(255,251,232,0.85)";
-    const pts = [
-      [0.14, 0.16],
-      [0.3, 0.1],
-      [0.5, 0.18],
-      [0.68, 0.1],
-      [0.86, 0.17],
-      [0.22, 0.32],
-      [0.78, 0.32],
-    ];
-    for (const [fx, fy] of pts) {
-      ctx.beginPath();
-      ctx.arc(x + fx * w, y + fy * h, Math.max(1.2, w * 0.004), 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  drawCelestial(ctx, cx, hy, r, cfg);
-
-  // reflection ripples
-  ctx.fillStyle = cfg.celestialBottom;
-  for (let i = 1; i <= 3; i++) {
-    const rw = r * (1 - i * 0.22);
-    ctx.beginPath();
-    ctx.ellipse(cx, hy + i * h * 0.03, rw, Math.max(1, h * 0.006), 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // beach band
-  const band = ctx.createLinearGradient(0, hy, 0, y + h);
-  band.addColorStop(0, "rgba(11,104,57,0)");
-  band.addColorStop(0.3, "rgba(10,42,24,0.5)");
-  band.addColorStop(1, cfg.scrim);
-  ctx.fillStyle = band;
-  ctx.fillRect(x, hy, w, y + h - hy);
-
-  // horizon
-  ctx.strokeStyle = cfg.horizon;
-  ctx.lineWidth = Math.max(1, w * 0.004);
-  ctx.beginPath();
-  ctx.moveTo(x + w * 0.05, hy);
-  ctx.lineTo(x + w * 0.95, hy);
-  ctx.stroke();
-
-  if (palms) {
-    const ph = h * 0.34;
-    drawPalmAt(ctx, x + w * 0.1, y + h - h * 0.02, ph, false, cfg.palmColor);
-    drawPalmAt(ctx, x + w * 0.9, y + h - h * 0.02, ph, true, cfg.palmColor);
-  }
-}
-
-// ---------- shared chrome ----------
-
-function drawStudioTag(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  unit: number,
-  cfg: StyleConfig,
-): void {
-  ctx.save();
-  ctx.textAlign = "left";
-  ctx.textBaseline = "top";
-  ctx.fillStyle = cfg.accent;
-  ctx.font = `700 ${unit * 30}px ${FONT.mono()}`;
-  ctx.fillText("2:47", x, y);
-  ctx.fillStyle = "rgba(255,251,232,0.85)";
-  ctx.font = `500 ${unit * 16}px ${FONT.mono()}`;
-  ctx.fillText("PM STUDIO", x + unit * 62, y + unit * 6);
   ctx.restore();
 }
 
@@ -295,23 +286,23 @@ function drawStamp(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  unit: number,
-  cfg: StyleConfig,
+  u: number,
+  color: string,
 ): void {
   ctx.save();
-  const w = unit * 300;
-  const h = unit * 52;
+  const w = u * 300;
+  const h = u * 52;
   ctx.translate(cx, cy);
-  ctx.rotate(-0.06);
+  ctx.rotate(-0.05);
   roundRectPath(ctx, -w / 2, -h / 2, w, h, h / 2);
-  ctx.lineWidth = Math.max(1, unit * 4);
-  ctx.strokeStyle = cfg.accent;
+  ctx.lineWidth = Math.max(1, u * 3.5);
+  ctx.strokeStyle = color;
   ctx.stroke();
-  ctx.fillStyle = cfg.accent;
+  ctx.fillStyle = color;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `500 ${unit * 21}px ${FONT.mono()}`;
-  ctx.fillText(EVENT.editionLabel.toUpperCase(), 0, unit * 1);
+  ctx.font = `600 ${u * 20}px ${FONT.mono()}`;
+  ctx.fillText(EVENT.editionLabel.toUpperCase(), 0, u * 1);
   ctx.restore();
 }
 
@@ -322,127 +313,85 @@ function composeBleed(
   W: number,
   H: number,
   k: number,
-  win: { x: number; y: number; w: number; h: number; kind: string; radius: number },
+  win: Win,
   cfg: StyleConfig,
   photo: CanvasImageSource,
   photoSize: PhotoSize,
   placement: Placement,
   identity: Identity | undefined,
-  shapeCfg: (typeof SHAPE)[FrameShape],
 ): void {
+  const u = k;
   const isCircle = win.kind === "circle";
+  const pad = W * 0.05;
 
+  // photo (fills the window) + subtle top/bottom scrims only at the edges
   ctx.save();
   windowPath(ctx, win);
   ctx.clip();
   const r = coverRectIn(win.x, win.y, win.w, win.h, photoSize, placement);
   ctx.drawImage(photo, r.x, r.y, r.w, r.h);
-  drawSceneRegion(ctx, win.x, win.y, win.w, win.h, cfg);
+
+  const th = win.h * 0.17;
+  const tg = ctx.createLinearGradient(0, win.y, 0, win.y + th);
+  tg.addColorStop(0, "rgba(10,42,24,0.62)");
+  tg.addColorStop(1, "rgba(10,42,24,0)");
+  ctx.fillStyle = tg;
+  ctx.fillRect(win.x, win.y, win.w, th);
+
+  const bh = win.h * 0.2;
+  const bg = ctx.createLinearGradient(0, win.y + win.h - bh, 0, win.y + win.h);
+  bg.addColorStop(0, "rgba(10,42,24,0)");
+  bg.addColorStop(1, "rgba(10,42,24,0.8)");
+  ctx.fillStyle = bg;
+  ctx.fillRect(win.x, win.y + win.h - bh, win.w, bh);
   ctx.restore();
 
-  // border
+  pinkBorderWindow(ctx, win, W);
+
+  // title (top) + small sun
+  ctx.textBaseline = "top";
   if (isCircle) {
-    ctx.save();
-    windowPath(ctx, win);
-    ctx.lineWidth = W * 0.02;
-    const bg = ctx.createLinearGradient(win.x, win.y, win.x + win.w, win.y + win.h);
-    bg.addColorStop(0, cfg.border[0]);
-    bg.addColorStop(0.5, cfg.border[1]);
-    bg.addColorStop(1, cfg.border[2]);
-    ctx.strokeStyle = bg;
-    ctx.stroke();
-    ctx.restore();
-  } else {
-    const pad = W * 0.03;
-    roundRectPath(ctx, pad, pad, W - pad * 2, H - pad * 2, W * 0.045);
-    const bg = ctx.createLinearGradient(pad, pad, W - pad, H - pad);
-    bg.addColorStop(0, cfg.border[0]);
-    bg.addColorStop(0.5, cfg.border[1]);
-    bg.addColorStop(1, cfg.border[2]);
-    ctx.lineWidth = W * 0.018;
-    ctx.strokeStyle = bg;
-    ctx.stroke();
-    roundRectPath(ctx, pad * 1.7, pad * 1.7, W - pad * 3.4, H - pad * 3.4, W * 0.035);
-    ctx.lineWidth = Math.max(1, W * 0.003);
-    ctx.strokeStyle = "rgba(255,251,232,0.45)";
-    ctx.stroke();
-  }
-
-  // chrome
-  const u = k;
-  drawStudioTag(ctx, W * 0.05, H * (shapeCfg.h === 630 ? 0.06 : 0.045), u, cfg);
-  drawStamp(ctx, W - W * 0.05 - u * 150, H * (shapeCfg.h === 630 ? 0.1 : 0.075), u, cfg);
-  drawBleedText(ctx, W, H, u, cfg, identity, isCircle);
-}
-
-function drawBleedText(
-  ctx: CanvasRenderingContext2D,
-  W: number,
-  H: number,
-  u: number,
-  cfg: StyleConfig,
-  identity: Identity | undefined,
-  isCircle: boolean,
-): void {
-  const disp = FONT.display();
-  const mono = FONT.mono();
-  const deva = FONT.deva();
-  const baseY = H - H * 0.06;
-  const left = W * 0.07;
-  const right = W - W * 0.07;
-
-  if (isCircle) {
-    // minimal chrome in the green corners
     ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = cfg.accent;
-    ctx.font = `700 ${u * 34}px ${mono}`;
-    ctx.fillText(`#${SHARE.hashtag}`, W / 2, H - H * 0.045);
-    return;
-  }
-
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  if (identity?.name) {
-    ctx.fillStyle = cfg.accent;
-    ctx.font = `800 ${u * 84}px ${disp}`;
-    ctx.fillText(truncate(identity.name, 16), left, baseY);
-    ctx.fillStyle = COLORS.cream;
-    ctx.font = `500 ${u * 28}px ${mono}`;
-    ctx.fillText(
-      (identity.builderClass ? `// ${identity.builderClass}` : "HH GOA 2026").toUpperCase(),
-      left,
-      baseY + u * 42,
-    );
+    ctx.fillStyle = CREAM;
+    ctx.font = `800 ${u * 44}px ${FONT.display()}`;
+    ctx.fillText("HH GOA 2026", win.x + win.w / 2, win.y + pad);
   } else {
-    ctx.fillStyle = cfg.accent;
-    ctx.font = `800 ${u * 80}px ${disp}`;
-    ctx.fillText("HH GOA", left, baseY);
-    const w = ctx.measureText("HH GOA").width;
-    ctx.font = `800 ${u * 36}px ${deva}`;
-    const gx = left + w + u * 14;
-    const gy = baseY - u * 36;
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = COLORS.cream;
-    ctx.lineWidth = u * 7;
-    ctx.strokeText("गोवा", gx, gy);
-    ctx.fillStyle = COLORS.pink;
-    ctx.fillText("गोवा", gx, gy);
-    ctx.fillStyle = COLORS.cream;
-    ctx.font = `500 ${u * 26}px ${mono}`;
-    ctx.fillText(`${EVENT.location} · ${EVENT.dates}`, left, baseY + u * 40);
+    ctx.textAlign = "left";
+    ctx.fillStyle = CREAM;
+    ctx.font = `800 ${u * 46}px ${FONT.display()}`;
+    ctx.fillText("HH GOA 2026", win.x + pad, win.y + pad * 0.8);
+    ctx.fillStyle = PINK;
+    ctx.font = `600 ${u * 21}px ${FONT.mono()}`;
+    ctx.fillText(`#${SHARE.hashtag}`, win.x + pad, win.y + pad * 0.8 + u * 52);
+    drawSmallSun(ctx, win.x + win.w - pad - u * 6, win.y + pad + u * 14, u * 20);
   }
 
-  ctx.textAlign = "right";
-  ctx.fillStyle = cfg.accent;
-  ctx.font = `700 ${u * 34}px ${mono}`;
-  ctx.fillText(`#${SHARE.hashtag}`, right, baseY);
-  ctx.fillStyle = "rgba(255,251,232,0.75)";
-  ctx.font = `400 ${u * 22}px ${mono}`;
-  const rightSub = identity?.handle
-    ? `@${identity.handle.replace(/^@/, "")}`
-    : LINKS.site.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  ctx.fillText(rightSub, right, baseY + u * 34);
+  // bottom row: name pill (or wordmark) + meta
+  const by = win.y + win.h - pad * 0.85;
+  ctx.textBaseline = "alphabetic";
+  if (isCircle) {
+    ctx.textAlign = "center";
+    if (identity?.name) {
+      drawNamePill(ctx, 0, by - u * 24, identity.name, u, "center", win.x + win.w / 2);
+    } else {
+      ctx.fillStyle = SUN;
+      ctx.font = `600 ${u * 26}px ${FONT.mono()}`;
+      ctx.fillText(`#${SHARE.hashtag}`, win.x + win.w / 2, by);
+    }
+  } else {
+    if (identity?.name) {
+      drawNamePill(ctx, win.x + pad, by - u * 26, identity.name, u, "left");
+    } else {
+      ctx.textAlign = "left";
+      ctx.fillStyle = SUN;
+      ctx.font = `700 ${u * 30}px ${FONT.display()}`;
+      ctx.fillText("HACKER HOUSE GOA", win.x + pad, by);
+    }
+    ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(255,251,232,0.9)";
+    ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
+    ctx.fillText(`GOA · ${EVENT.dates}`, win.x + win.w - pad, by);
+  }
 }
 
 // ---------- badge mode (tall / arch) ----------
@@ -452,7 +401,7 @@ function composeBadge(
   W: number,
   H: number,
   k: number,
-  win: { x: number; y: number; w: number; h: number; kind: string; radius: number },
+  win: Win,
   cfg: StyleConfig,
   photo: CanvasImageSource,
   photoSize: PhotoSize,
@@ -462,46 +411,29 @@ function composeBadge(
 ): void {
   const u = k;
   const m = W * 0.03;
+  const cx = W / 2;
 
-  // outer ornate border
-  roundRectPath(ctx, m, m, W - m * 2, H - m * 2, W * 0.05);
-  const og = ctx.createLinearGradient(m, m, W - m, H - m);
-  og.addColorStop(0, cfg.border[0]);
-  og.addColorStop(0.5, cfg.border[1]);
-  og.addColorStop(1, cfg.border[2]);
-  ctx.lineWidth = W * 0.016;
-  ctx.strokeStyle = og;
-  ctx.stroke();
-  roundRectPath(ctx, m * 1.7, m * 1.7, W - m * 3.4, H - m * 3.4, W * 0.04);
-  ctx.lineWidth = Math.max(1, W * 0.003);
-  ctx.strokeStyle = "rgba(255,251,232,0.4)";
-  ctx.stroke();
+  drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.05, W);
 
-  // header wordmark
-  drawBadgeHeader(ctx, W, win.y, u, cfg);
+  // title block above the photo
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = CREAM;
+  ctx.font = `800 ${u * 74}px ${FONT.display()}`;
+  ctx.fillText("HH GOA 2026", cx, win.y - u * 66);
+  ctx.fillStyle = PINK;
+  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+  ctx.fillText(`BUILDER ID · #${SHARE.hashtag}`, cx, win.y - u * 30);
 
-  // side palms flanking the window
-  drawPalmAt(ctx, win.x * 0.52, win.y + win.h * 0.98, win.h * 0.5, false, cfg.palmColor);
-  drawPalmAt(ctx, W - win.x * 0.52, win.y + win.h * 0.98, win.h * 0.5, true, cfg.palmColor);
-
-  // photo window
+  // clean photo window
   ctx.save();
   windowPath(ctx, win);
   ctx.clip();
   const r = coverRectIn(win.x, win.y, win.w, win.h, photoSize, placement);
   ctx.drawImage(photo, r.x, r.y, r.w, r.h);
   ctx.restore();
-
-  // window border
-  ctx.save();
-  windowPath(ctx, win);
-  ctx.lineWidth = W * 0.013;
-  ctx.strokeStyle = cfg.accent;
-  ctx.stroke();
-  ctx.lineWidth = Math.max(1, W * 0.004);
-  ctx.strokeStyle = COLORS.pink;
-  ctx.stroke();
-  ctx.restore();
+  pinkBorderWindow(ctx, win, W);
 
   // cream name panel
   if (shapeCfg.panel) {
@@ -511,94 +443,65 @@ function composeBadge(
       w: shapeCfg.panel.w * k,
       h: shapeCfg.panel.h * k,
     };
-    drawPanel(ctx, p, u, cfg, identity);
-  }
+    roundRectPath(ctx, p.x, p.y, p.w, p.h, u * 22);
+    ctx.fillStyle = CREAM;
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, u * 3.5);
+    ctx.strokeStyle = PINK;
+    ctx.stroke();
 
-  // heritage stamp, top-right inside border
-  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.05, u, cfg);
-}
-
-function drawBadgeHeader(
-  ctx: CanvasRenderingContext2D,
-  W: number,
-  topH: number,
-  u: number,
-  cfg: StyleConfig,
-): void {
-  const cx = W / 2;
-  const fs = Math.min(topH * 0.34, W * 0.11);
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = cfg.accent;
-  ctx.font = `800 ${fs}px ${FONT.display()}`;
-  ctx.fillText("HACKER", cx, topH * 0.46);
-  ctx.fillText("HOUSE", cx, topH * 0.86);
-  // गोवा sticker centered between lines
-  const gy = topH * 0.66;
-  ctx.font = `800 ${fs * 0.6}px ${FONT.deva()}`;
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = COLORS.cream;
-  ctx.lineWidth = fs * 0.05;
-  ctx.strokeText("गोवा", cx, gy);
-  ctx.fillStyle = COLORS.pink;
-  ctx.fillText("गोवा", cx, gy);
-}
-
-function drawPanel(
-  ctx: CanvasRenderingContext2D,
-  p: { x: number; y: number; w: number; h: number },
-  u: number,
-  cfg: StyleConfig,
-  identity: Identity | undefined,
-): void {
-  roundRectPath(ctx, p.x, p.y, p.w, p.h, u * 24);
-  ctx.fillStyle = COLORS.cream;
-  ctx.fill();
-  ctx.lineWidth = Math.max(1, u * 4);
-  ctx.strokeStyle = COLORS.pink;
-  ctx.stroke();
-
-  const cx = p.x + p.w / 2;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-
-  if (identity?.name) {
-    ctx.fillStyle = COLORS.goaGreenDeep;
-    ctx.font = `800 ${u * 70}px ${FONT.display()}`;
-    ctx.fillText(truncate(identity.name, 18), cx, p.y + p.h * 0.42);
-    if (identity.builderClass) {
-      ctx.fillStyle = COLORS.pink;
-      ctx.font = `600 ${u * 26}px ${FONT.mono()}`;
-      ctx.fillText(`// ${identity.builderClass.toUpperCase()}`, cx, p.y + p.h * 0.64);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    if (identity?.name) {
+      ctx.fillStyle = DEEP;
+      ctx.font = `800 ${u * 62}px ${FONT.display()}`;
+      ctx.fillText(truncate(identity.name, 18), p.x + p.w / 2, p.y + p.h * 0.44);
+      if (identity.builderClass) {
+        ctx.fillStyle = PINK;
+        ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+        ctx.fillText(
+          `// ${identity.builderClass.toUpperCase()}`,
+          p.x + p.w / 2,
+          p.y + p.h * 0.66,
+        );
+      }
+      ctx.fillStyle = GREEN;
+      ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
+      ctx.fillText(
+        `#${SHARE.hashtag} · ${EVENT.dates}`,
+        p.x + p.w / 2,
+        p.y + p.h * 0.86,
+      );
+    } else {
+      ctx.fillStyle = DEEP;
+      ctx.font = `800 ${u * 52}px ${FONT.display()}`;
+      ctx.fillText("HACKER HOUSE GOA", p.x + p.w / 2, p.y + p.h * 0.48);
+      ctx.fillStyle = GREEN;
+      ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
+      ctx.fillText(
+        `#${SHARE.hashtag} · ${EVENT.dates}`,
+        p.x + p.w / 2,
+        p.y + p.h * 0.76,
+      );
     }
-  } else {
-    ctx.fillStyle = COLORS.goaGreenDeep;
-    ctx.font = `800 ${u * 60}px ${FONT.display()}`;
-    ctx.fillText("HH GOA 2026", cx, p.y + p.h * 0.46);
   }
 
-  ctx.fillStyle = COLORS.goaGreen;
-  ctx.font = `500 ${u * 24}px ${FONT.mono()}`;
-  ctx.fillText(
-    `#${SHARE.hashtag}  ·  ${EVENT.dates}`,
-    cx,
-    p.y + p.h * (identity?.name && identity.builderClass ? 0.86 : 0.78),
-  );
+  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.055, u, SUN);
 }
 
 // ---------- team / combined frame ----------
 
 export type TeamPhoto = { photo: CanvasImageSource; size: PhotoSize };
+export type TeamMember = { photo: CanvasImageSource; size: PhotoSize; name?: string };
 export type TeamComposeInput = {
   ctx: CanvasRenderingContext2D;
   w: number;
   h: number;
-  photos: TeamPhoto[];
+  members: TeamMember[];
   style?: FrameStyle;
   teamName?: string;
 };
 
-/** Grid cell rects for n photos within a region: 2=cols, 3=2-over-1, 4=2x2. */
 function teamCells(
   x: number,
   y: number,
@@ -606,7 +509,7 @@ function teamCells(
   h: number,
   n: number,
 ): number[][] {
-  const g = Math.min(w, h) * 0.03;
+  const g = Math.min(w, h) * 0.035;
   if (n <= 1) return [[x, y, w, h]];
   if (n === 2) {
     const cw = (w - g) / 2;
@@ -635,75 +538,70 @@ function teamCells(
 }
 
 export function composeTeam(input: TeamComposeInput): void {
-  const { ctx, w: W, h: H, photos, teamName } = input;
-  const cfg = STYLE[input.style ?? "sunset"];
+  const { ctx, w: W, h: H, members, teamName } = input;
   const u = W / 1200;
+  const m = W * 0.03;
 
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = COLORS.goaGreen;
+  ctx.fillStyle = GREEN;
   ctx.fillRect(0, 0, W, H);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
+  drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
 
-  const pad = W * 0.035;
-  const bandH = H * 0.2;
-  const gx = pad * 1.7;
-  const gy = pad * 1.7;
+  // title
+  const cx = W / 2;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = CREAM;
+  ctx.font = `800 ${u * 68}px ${FONT.display()}`;
+  ctx.fillText("HH GOA 2026", cx, H * 0.1);
+  ctx.fillStyle = PINK;
+  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+  ctx.fillText("ONE FRAME, WHOLE CREW", cx, H * 0.13);
+
+  // grid of photos with name tags
+  const gx = m + W * 0.03;
+  const gyTop = H * 0.17;
   const gw = W - gx * 2;
-  const gh = H - bandH - gy - pad * 1.2;
-  const n = Math.max(1, Math.min(4, photos.length));
-  const rects = teamCells(gx, gy, gw, gh, n);
-
+  const gh = H * 0.66 - gyTop;
+  const n = Math.max(1, Math.min(4, members.length));
+  const rects = teamCells(gx, gyTop, gw, gh, n);
   for (let i = 0; i < n; i++) {
-    const [cx, cy, cw, ch] = rects[i];
+    const [rx, ry, rw, rh] = rects[i];
     ctx.save();
-    roundRectPath(ctx, cx, cy, cw, ch, W * 0.026);
+    roundRectPath(ctx, rx, ry, rw, rh, W * 0.022);
     ctx.clip();
-    const r = coverRectIn(cx, cy, cw, ch, photos[i].size, {
+    const rr = coverRectIn(rx, ry, rw, rh, members[i].size, {
       scale: 1,
       offsetX: 0,
       offsetY: 0,
     });
-    ctx.drawImage(photos[i].photo, r.x, r.y, r.w, r.h);
+    ctx.drawImage(members[i].photo, rr.x, rr.y, rr.w, rr.h);
     ctx.restore();
-    ctx.save();
-    roundRectPath(ctx, cx, cy, cw, ch, W * 0.026);
-    ctx.lineWidth = W * 0.006;
-    ctx.strokeStyle = cfg.accent;
+    roundRectPath(ctx, rx, ry, rw, rh, W * 0.022);
+    ctx.lineWidth = W * 0.007;
+    ctx.strokeStyle = PINK;
     ctx.stroke();
-    ctx.restore();
+    const nm = members[i].name?.trim();
+    if (nm) {
+      drawNamePill(ctx, 0, ry + rh - u * 34, nm, u, "center", rx + rw / 2);
+    }
   }
 
-  // bottom band scene + team text
-  const bandY = H - bandH;
-  const scrim = ctx.createLinearGradient(0, bandY - bandH * 0.4, 0, H);
-  scrim.addColorStop(0, "rgba(10,42,24,0)");
-  scrim.addColorStop(0.5, cfg.scrim);
-  scrim.addColorStop(1, cfg.scrim);
-  ctx.fillStyle = scrim;
-  ctx.fillRect(0, bandY - bandH * 0.4, W, bandH * 1.4);
-
-  drawCelestial(ctx, W / 2, bandY + bandH * 0.42, bandH * 0.3, cfg);
-  drawPalmAt(ctx, pad + W * 0.03, H - pad * 1.1, bandH * 0.92, false, cfg.palmColor);
-  drawPalmAt(ctx, W - pad - W * 0.03, H - pad * 1.1, bandH * 0.92, true, cfg.palmColor);
-
+  // bottom meta
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = cfg.accent;
-  ctx.font = `800 ${u * 76}px ${FONT.display()}`;
-  ctx.fillText(truncate(teamName?.trim() || "THE CREW", 20), W / 2, bandY + bandH * 0.52);
-  ctx.fillStyle = COLORS.cream;
-  ctx.font = `500 ${u * 26}px ${FONT.mono()}`;
-  ctx.fillText(`HH GOA 2026  ·  #${SHARE.hashtag}`, W / 2, bandY + bandH * 0.72);
+  ctx.fillStyle = CREAM;
+  ctx.font = `800 ${u * 46}px ${FONT.display()}`;
+  ctx.fillText(truncate(teamName?.trim() || "THE CREW", 22), cx, H * 0.87);
+  ctx.fillStyle = SUN;
+  ctx.font = `600 ${u * 26}px ${FONT.mono()}`;
+  ctx.fillText(`#${SHARE.hashtag}`, cx, H * 0.91);
+  ctx.fillStyle = "rgba(255,251,232,0.8)";
+  ctx.font = `500 ${u * 20}px ${FONT.mono()}`;
+  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H * 0.94);
 
-  // outer border + stamp
-  roundRectPath(ctx, pad, pad, W - pad * 2, H - pad * 2, W * 0.045);
-  const bg = ctx.createLinearGradient(pad, pad, W - pad, H - pad);
-  bg.addColorStop(0, cfg.border[0]);
-  bg.addColorStop(0.5, cfg.border[1]);
-  bg.addColorStop(1, cfg.border[2]);
-  ctx.lineWidth = W * 0.018;
-  ctx.strokeStyle = bg;
-  ctx.stroke();
-  drawStamp(ctx, W - pad - W * 0.02 - u * 150, pad + W * 0.05, u, cfg);
+  pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.045, W);
+  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.05, u, SUN);
 }

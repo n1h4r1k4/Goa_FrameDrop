@@ -41,7 +41,7 @@ export const SHARE = {
   hashtag: "FrameInGoa",
   handle: "@247pmstudio",
   defaultCaption:
-    "Locked in for HH Goa 2026 🌴 building on the sand, 28–31 Oct. #FrameInGoa",
+    "Locked in for HH Goa 2026. Building on the sand, 28–31 Oct. #FrameInGoa",
 } as const;
 
 /** Bilingual wordmark: English + गोवा (Devanagari, red). */

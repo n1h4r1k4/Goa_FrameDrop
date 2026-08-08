@@ -77,7 +77,7 @@ export default function ResultActions({
         !dirtyRef.current && blobRef.current ? blobRef.current : await build();
       downloadBlob(blob, fileName);
     } catch {
-      setNote("Couldn't render — try a smaller photo.");
+      setNote("Couldn't render. Try a smaller photo.");
     } finally {
       setBusy(null);
     }
@@ -102,16 +102,16 @@ export default function ResultActions({
           const { shareId } = await uploadFrame(blob);
           const shareUrl = `${window.location.origin}/s/${shareId}`;
           window.open(tweetUrl(shareUrl), "_blank", "noopener,noreferrer");
-          setNote("Opened X with a preview link — you can also Download the PNG.");
+          setNote("Opened X with a preview link. You can also Download the PNG.");
         } catch {
           // Blob not configured / offline: text intent + hand them the file.
           window.open(tweetUrl(), "_blank", "noopener,noreferrer");
           downloadBlob(blob, fileName);
-          setNote("Opened X — image downloaded so you can attach it to the post.");
+          setNote("Opened X. Image downloaded so you can attach it to the post.");
         }
       }
     } catch {
-      setNote("Couldn't prepare the share — try Download instead.");
+      setNote("Couldn't prepare the share. Try Download instead.");
     } finally {
       setBusy(null);
     }

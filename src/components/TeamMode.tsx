@@ -7,7 +7,7 @@ import {
   ACCEPT,
   type DecodedPhoto,
 } from "@/lib/heic/decode";
-import { composeTeam, type TeamPhoto } from "@/lib/canvas/compose";
+import { composeTeam } from "@/lib/canvas/compose";
 import { renderTeamToBlob, downloadBlob } from "@/lib/canvas/export";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
 import { shareImageFile } from "@/lib/share/webshare";
@@ -18,7 +18,7 @@ import { COLORS, SHARE } from "@/lib/brand";
 
 const MAX = 4;
 const PREVIEW = 360;
-const CAPTION = "Our crew is locked in for HH Goa 2026 🌴 #FrameInGoa";
+const CAPTION = "Our crew is locked in for HH Goa 2026. #FrameInGoa";
 
 function Thumb({ bmp, onRemove }: { bmp: ImageBitmap; onRemove: () => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -56,10 +56,15 @@ export default function TeamMode() {
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const teamPhotos = useCallback(
-    (): TeamPhoto[] => photos.map((p) => ({ photo: p.bitmap, size: p.size })),
-    [photos],
-  );
+  const [names, setNames] = useState("");
+  const members = useCallback(() => {
+    const list = names.split(",").map((s) => s.trim());
+    return photos.map((p, i) => ({
+      photo: p.bitmap,
+      size: p.size,
+      name: list[i] || undefined,
+    }));
+  }, [photos, names]);
 
   const addFiles = useCallback(
     async (files?: FileList | null) => {
@@ -95,11 +100,11 @@ export default function TeamMode() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ensureFontsLoaded().then(() =>
-      composeTeam({ ctx, w: side, h: side, photos: teamPhotos(), style, teamName }),
+      composeTeam({ ctx, w: side, h: side, members: members(), style, teamName }),
     );
-  }, [photos, style, teamName, teamPhotos]);
+  }, [photos, style, teamName, names, members]);
 
-  const build = () => renderTeamToBlob({ photos: teamPhotos(), style, teamName });
+  const build = () => renderTeamToBlob({ members: members(), style, teamName });
 
   const onDownload = async () => {
     setBusy("download");
@@ -107,7 +112,7 @@ export default function TeamMode() {
     try {
       downloadBlob(await build(), "hh-goa-team.png");
     } catch {
-      setNote("Couldn't render — try fewer/smaller photos.");
+      setNote("Couldn't render. Try fewer or smaller photos.");
     } finally {
       setBusy(null);
     }
@@ -131,11 +136,11 @@ export default function TeamMode() {
         } catch {
           window.open(tweetUrl(undefined, CAPTION), "_blank", "noopener,noreferrer");
           downloadBlob(blob, "hh-goa-team.png");
-          setNote("Opened X — image downloaded so you can attach it.");
+          setNote("Opened X. Image downloaded so you can attach it.");
         }
       }
     } catch {
-      setNote("Couldn't prepare the share — try Download.");
+      setNote("Couldn't prepare the share. Try Download.");
     } finally {
       setBusy(null);
     }
@@ -157,9 +162,28 @@ export default function TeamMode() {
           disabled={busy === "add"}
           className="flex w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-cream/25 bg-goa-green-deep/30 px-6 py-14 text-center transition-colors hover:border-sun-1/70"
         >
-          <span className="text-4xl" aria-hidden>
-            {busy === "add" ? "🌀" : "🧑‍🤝‍🧑"}
-          </span>
+          <svg
+            width="38"
+            height="38"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className={`text-sun-1 ${busy === "add" ? "animate-pulse" : ""}`}
+          >
+            <path
+              d="M12 15V3m0 0L8 7m4-4l4 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
           <span className="font-mono text-sm uppercase tracking-[0.2em] text-sun-1">
             {busy === "add" ? "Reading photos…" : "Add teammates' photos"}
           </span>
@@ -200,9 +224,15 @@ export default function TeamMode() {
           </div>
 
           <input
+            value={names}
+            onChange={(e) => setNames(e.target.value)}
+            placeholder="Names, comma-separated (Krishna, Aisha, Dev)"
+            className="w-full rounded-xl border border-cream/20 bg-goa-green-deep/40 px-4 py-2.5 font-mono text-sm text-cream placeholder:text-cream/40 focus:border-sun-1 focus:outline-none"
+          />
+          <input
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
-            placeholder="Team name (optional)"
+            placeholder="Crew name (optional)"
             maxLength={22}
             className="w-full rounded-xl border border-cream/20 bg-goa-green-deep/40 px-4 py-2.5 font-mono text-sm text-cream placeholder:text-cream/40 focus:border-sun-1 focus:outline-none"
           />

@@ -14,9 +14,9 @@
 
 /* Fonts from next/font (values set on <html>) */
 @theme inline {
-  --font-display: var(--font-imbue);
+  --font-display: var(--font-baloo);
   --font-mono: var(--font-victor-mono);
-  --font-deva: var(--font-deva);
+  --font-deva: var(--font-baloo);
 }
 
 :root {

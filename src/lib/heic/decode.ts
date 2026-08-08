@@ -86,6 +86,6 @@ export async function decodePhoto(file: File): Promise<DecodedPhoto> {
   }
 
   throw new DecodeError(
-    "Couldn't read this photo — try a JPG or PNG, or a screenshot.",
+    "Couldn't read this photo. Try a JPG or PNG, or a screenshot.",
   );
 }

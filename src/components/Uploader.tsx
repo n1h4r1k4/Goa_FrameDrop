@@ -58,9 +58,28 @@ export default function Uploader({ onPhoto }: Props) {
             : "border-cream/25 bg-goa-green-deep/30 hover:border-sun-1/70"
         }`}
       >
-        <span className="text-4xl" aria-hidden>
-          {busy ? "🌀" : "🌅"}
-        </span>
+        <svg
+          width="38"
+          height="38"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+          className={`text-sun-1 ${busy ? "animate-pulse" : ""}`}
+        >
+          <path
+            d="M12 15V3m0 0L8 7m4-4l4 4"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
         <span className="font-mono text-sm uppercase tracking-[0.2em] text-sun-1">
           {busy ? "Reading photo…" : "Upload a photo"}
         </span>
