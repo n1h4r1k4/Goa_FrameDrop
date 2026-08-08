@@ -1342,74 +1342,49 @@ export function composeShareCard(
   drawSceneBackdrop(ctx, m, m, W - m * 2, H - m * 2, u, cfg);
   drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
 
-  // pass on the left, contained so nothing is ever cropped
-  const s = Math.min((H - u * 76) / passH, (W * 0.42) / passW);
+  // The pass is the whole point, so it fills the plate: scaled to the full
+  // height and centred, with the theme carrying the leftover width. No text
+  // column — this should read as "my card", not as a banner about my card.
+  const s = Math.min((H - u * 34) / passH, (W - u * 34) / passW);
   const pw = passW * s;
   const ph = passH * s;
-  const px = W * 0.26 - pw / 2;
+  const px = (W - pw) / 2;
   const py = (H - ph) / 2;
+
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = u * 26;
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = u * 30;
   ctx.shadowOffsetY = u * 8;
-  roundRectPath(ctx, px, py, pw, ph, u * 16);
+  roundRectPath(ctx, px, py, pw, ph, u * 14);
   ctx.fillStyle = cfg.bg;
   ctx.fill();
   ctx.restore();
+
   ctx.save();
-  roundRectPath(ctx, px, py, pw, ph, u * 16);
+  roundRectPath(ctx, px, py, pw, ph, u * 14);
   ctx.clip();
   ctx.drawImage(pass, px, py, pw, ph);
   ctx.restore();
-  roundRectPath(ctx, px, py, pw, ph, u * 16);
-  ctx.lineWidth = Math.max(1, u * 4);
-  ctx.strokeStyle = PINK;
-  ctx.stroke();
 
-  // wordmark + details on the right
-  const cx = W * 0.68;
-  drawWordmark(ctx, cx, H * 0.3, u * 52, cfg.accent);
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = PINK;
-  ctx.font = `600 ${u * 22}px ${FONT.mono()}`;
-  ctx.fillText(`${label} · #${SHARE.hashtag}`, cx, H * 0.3 + u * 42);
-
-  const right = W - m - u * 40;
-  const maxW = right - (px + pw) - u * 40;
-  if (identity?.name) {
-    ctx.fillStyle = CREAM;
-    fitFont(ctx, identity.name, maxW, u * 62, FONT.display(), "800");
-    ctx.fillText(truncate(identity.name, 18), cx, H * 0.52);
-    const sub = subline(identity);
-    if (sub) {
-      ctx.fillStyle = cfg.accent;
-      fitFont(ctx, sub, maxW, u * 24, FONT.mono());
-      ctx.fillText(sub, cx, H * 0.6);
-    }
-    const stack = stackLabel(identity);
-    if (stack) {
-      ctx.fillStyle = "rgba(255,251,232,0.75)";
-      fitFont(ctx, stack, maxW, u * 20, FONT.mono(), "500");
-      ctx.fillText(stack, cx, H * 0.67);
-    }
+  // only mark the plate where the pass doesn't already reach
+  if (px > u * 150) {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = cfg.accent;
+    ctx.font = `700 ${u * 24}px ${FONT.mono()}`;
+    ctx.save();
+    ctx.translate(px / 2, H / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(`#${SHARE.hashtag}`, 0, 0);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(W - px / 2, H / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = "rgba(255,251,232,0.75)";
+    ctx.font = `600 ${u * 22}px ${FONT.mono()}`;
+    ctx.fillText(`${label} · ${EVENT.dates}`, 0, 0);
+    ctx.restore();
   }
-
-  ctx.fillStyle = "rgba(255,251,232,0.85)";
-  ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
-  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H * 0.82);
-
-  drawCornerTicks(
-    ctx,
-    m + u * 24,
-    m + u * 24,
-    W - m * 2 - u * 48,
-    H - m * 2 - u * 48,
-    u * 22,
-    "rgba(254,225,1,0.5)",
-    Math.max(1, u * 3),
-  );
-  pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, u * 26, W * 0.6);
 }
 
 // ---------- image template overlay ----------

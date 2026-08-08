@@ -1,23 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- night sky, matching --color-night so the tab icon reads as one dark chip -->
-  <rect width="64" height="64" rx="13" fill="#060d0a" />
-  <!-- crescent: a sun-yellow disc with the sky bitten out of it (stays crisp at 16px) -->
-  <circle cx="35" cy="28" r="15" fill="#fee101" />
-  <circle cx="27" cy="23" r="13" fill="#060d0a" />
-  <!-- stars -->
-  <g fill="#fffbe8">
-    <circle cx="13" cy="13" r="2.1" />
-    <circle cx="52" cy="16" r="1.5" />
-    <circle cx="15" cy="34" r="1.4" />
-  </g>
+  <!-- Sun-yellow field, not night-black: a dark icon disappears into dark
+       browser chrome, which is exactly what happened. Yellow reads on both. -->
+  <rect width="64" height="64" rx="14" fill="#fee101" />
+  <!-- crescent, bitten out of a disc so it stays crisp at 16px -->
+  <circle cx="36" cy="27" r="15" fill="#0a2a18" />
+  <circle cx="28" cy="22" r="13" fill="#fee101" />
+  <!-- star -->
+  <circle cx="15" cy="15" r="2.6" fill="#0a2a18" />
   <!-- shoreline -->
   <line
-    x1="9"
-    y1="51"
-    x2="55"
-    y2="51"
-    stroke="#ff2d78"
-    stroke-width="4"
+    x1="10"
+    y1="50"
+    x2="54"
+    y2="50"
+    stroke="#e6198a"
+    stroke-width="6"
     stroke-linecap="round"
   />
 </svg>
