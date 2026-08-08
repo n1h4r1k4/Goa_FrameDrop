@@ -45,7 +45,8 @@ export default function SiteFooter() {
         </div>
         <p className="pt-2 font-mono text-xs text-sun-1">
           Tag your pass with{" "}
-          <span className="font-bold">#{SHARE.hashtag}</span> on X.
+          <span className="font-bold">#{SHARE.hashtag}</span> &amp;{" "}
+          <span className="font-bold">#{SHARE.crewHashtag}</span> on X.
         </p>
         <p className="font-mono text-[0.65rem] text-cream/40">
           © 2026 HH Goa · {LINKS.studioName}

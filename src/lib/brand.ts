@@ -44,6 +44,8 @@ export const LINKS = {
 
 export const SHARE = {
   hashtag: "FrameInGoa",
+  /** crew tag, posted alongside the event hashtag */
+  crewHashtag: "Codeville",
   handle: "@247pmstudio",
   defaultCaption:
     "Locked in for HH Goa 2026. Building on the sand, 28–31 Oct. #FrameInGoa",
