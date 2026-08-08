@@ -77,7 +77,7 @@ export default function Card3DView({
 
   if (!cards) {
     return (
-      <div className="h-[520px] w-full max-w-[380px] animate-pulse rounded-2xl bg-goa-green-deep/40" />
+      <div className="h-[520px] w-full max-w-[380px] animate-pulse rounded-2xl border-[3px] border-dashed border-goa-green/40 bg-goa-green/10" />
     );
   }
   return (
@@ -91,13 +91,13 @@ export default function Card3DView({
       <button
         type="button"
         onClick={() => setFlipped((f) => !f)}
-        className="flex items-center gap-2 rounded-full border border-cream/25 px-5 py-2 font-mono text-xs uppercase tracking-widest text-cream/80 transition-colors hover:border-sun-1/70 active:scale-95"
+        className="hh-btn hh-btn-paper"
       >
         <FlipIcon className="h-4 w-4" />
         {flipped ? "Show front" : "Flip to QR"}
       </button>
-      <p className="font-mono text-[11px] text-cream/50">
-        grab the card and fling it — the lanyard swings
+      <p className="font-mono text-[0.66rem] uppercase tracking-[0.14em] text-ink/45">
+        Grab the card and fling it — the lanyard swings
       </p>
     </div>
   );

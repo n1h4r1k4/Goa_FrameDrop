@@ -18,13 +18,14 @@ import { uploadFrame } from "@/lib/blob/client";
 import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
 import { SHARE } from "@/lib/brand";
 import CameraCapture from "./CameraCapture";
-import { DownloadIcon, ShareIcon } from "./icons";
+import { Panel, PanelHead, SectionTitle, Tape } from "./ui/Panel";
+import { CrewIcon, DownloadIcon, ShareIcon, UploadIcon } from "./icons";
 
 const MAX = 4;
 const PREVIEW = 360;
 const CAPTION = "Our crew is locked in for HH Goa 2026. #FrameInGoa";
 
-// swatch colour per theme for the compact dot picker (matches the solo flow)
+// swatch colour per theme for the compact tile picker (matches the solo flow)
 const STYLE_DOT: Record<FrameStyle, string> = {
   sunset: "#fee101",
   midnight: "#06231c",
@@ -36,8 +37,8 @@ const pop = (el: EventTarget | null) => {
   if (el instanceof HTMLElement) {
     gsap.fromTo(
       el,
-      { scale: 0.82 },
-      { scale: 1, duration: 0.4, ease: "back.out(3)" },
+      { scale: 0.9 },
+      { scale: 1, duration: 0.35, ease: "back.out(3)" },
     );
   }
 };
@@ -64,12 +65,17 @@ function Thumb({
   }, [bmp]);
   return (
     <div className={`relative ${className}`}>
-      <canvas ref={ref} width={72} height={72} className="rounded-lg" />
+      <canvas
+        ref={ref}
+        width={72}
+        height={72}
+        className="rounded-lg border-2 border-ink"
+      />
       <button
         type="button"
         onClick={onRemove}
         aria-label="Remove photo"
-        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-goa-red text-xs text-cream transition-transform active:scale-90"
+        className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-ink bg-pink-hot text-xs font-bold text-white transition-transform active:scale-90"
       >
         ×
       </button>
@@ -214,104 +220,87 @@ export default function TeamMode() {
   };
 
   const canAdd = photos.length < (mode === "group" ? 1 : MAX);
-  const modeBtn = (active: boolean) =>
-    `flex-1 rounded-full px-3 py-2 font-mono text-xs uppercase tracking-widest transition-all active:scale-95 ${
-      active
-        ? "bg-sun-1 text-goa-green-deep"
-        : "border border-cream/25 text-cream/75 hover:border-sun-1/70"
-    }`;
 
   return (
-    <div ref={rootRef} className="flex flex-col items-center gap-5">
-      <div className="flex w-full gap-2">
-        <button
-          type="button"
-          onClick={(e) => {
-            setMode("individual");
-            pop(e.currentTarget);
-          }}
-          aria-pressed={mode === "individual"}
-          className={modeBtn(mode === "individual")}
-        >
-          Individual Photos
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            setMode("group");
-            setPhotos((p) => p.slice(0, 1));
-            pop(e.currentTarget);
-          }}
-          aria-pressed={mode === "group"}
-          className={modeBtn(mode === "group")}
-        >
-          Group Photo
-        </button>
-      </div>
-      {photos.length === 0 ? (
-        <div className="flex w-full flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              addFiles(e.dataTransfer.files);
-            }}
-            disabled={busy === "add"}
-            className="flex w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-cream/25 bg-goa-green-deep/30 px-6 py-14 text-center transition-colors hover:border-sun-1/70"
-          >
-            <svg
-              width="38"
-              height="38"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-              className={`text-sun-1 ${busy === "add" ? "animate-pulse" : ""}`}
+    <div
+      ref={rootRef}
+      className="grid items-start gap-6 lg:grid-cols-2 lg:gap-8"
+    >
+      {/* -------------------------------------------------------- controls */}
+      <Panel>
+        <PanelHead
+          step={1}
+          title="Crew photos"
+          badge={mode === "group" ? "One shot" : `${photos.length} / ${MAX}`}
+        />
+        <div className="flex flex-col gap-4 px-5 py-5 sm:px-6">
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                setMode("individual");
+                pop(e.currentTarget);
+              }}
+              aria-pressed={mode === "individual"}
+              className="hh-tile justify-center"
             >
-              <path
-                d="M12 15V3m0 0L8 7m4-4l4 4"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="font-mono text-sm uppercase tracking-[0.2em] text-sun-1">
-              {busy === "add"
-                ? "Reading photos…"
-                : mode === "group"
-                  ? "Add your group photo"
-                  : "Add teammates' photos"}
-            </span>
-            <span className="font-mono text-xs text-cream/60">
-              {mode === "group"
-                ? "one group shot · jpg / png / heic"
-                : "pick up to 4 · jpg / png / heic"}
-            </span>
-          </button>
-          <CameraCapture
-            onCapture={(f) => addFiles([f])}
-            label="Take a photo"
-            className="w-full rounded-full border-2 border-sun-1 px-6 py-3 font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform hover:-translate-y-0.5 active:scale-95"
-          />
-        </div>
-      ) : (
-        <>
-          <canvas
-            ref={canvasRef}
-            aria-label="Team frame preview"
-            className="crew-reveal canvas-surface aspect-square w-full max-w-[360px] rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
-          />
+              Individual
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                setMode("group");
+                setPhotos((p) => p.slice(0, 1));
+                pop(e.currentTarget);
+              }}
+              aria-pressed={mode === "group"}
+              className="hh-tile justify-center"
+            >
+              Group photo
+            </button>
+          </div>
 
-          <div className="crew-reveal flex w-full items-center gap-3">
-            <div className="flex flex-1 flex-wrap gap-2">
+          {photos.length === 0 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  addFiles(e.dataTransfer.files);
+                }}
+                disabled={busy === "add"}
+                className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-[3px] border-dashed border-ink/45 bg-paper-2 px-6 py-10 text-center transition-colors hover:border-ink"
+              >
+                <span
+                  className={`flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-ink bg-sun-1 shadow-[3px_3px_0_var(--color-ink)] ${
+                    busy === "add" ? "animate-pulse" : ""
+                  }`}
+                >
+                  <UploadIcon className="h-5 w-5 text-ink" />
+                </span>
+                <span className="font-mono text-sm font-bold uppercase tracking-[0.12em] text-ink">
+                  {busy === "add"
+                    ? "Reading photos…"
+                    : mode === "group"
+                      ? "Add your group photo"
+                      : "Add crew photos"}
+                </span>
+                <span className="font-mono text-[0.7rem] text-ink/55">
+                  {mode === "group"
+                    ? "One group shot · JPG / PNG / HEIC"
+                    : `Up to ${MAX} · JPG / PNG / HEIC`}
+                </span>
+              </button>
+              <CameraCapture
+                onCapture={(f) => addFiles([f])}
+                label="Take a photo"
+                className="hh-btn hh-btn-paper w-full"
+              />
+            </>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
               {photos.map((p, i) => (
                 <Thumb
                   key={i}
@@ -326,99 +315,149 @@ export default function TeamMode() {
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
-                  className="crew-thumb flex h-[72px] w-[72px] items-center justify-center rounded-lg border border-dashed border-cream/30 text-2xl text-sun-1 transition-colors hover:border-sun-1 active:scale-90"
+                  className="crew-thumb flex h-[72px] w-[72px] items-center justify-center rounded-lg border-2 border-dashed border-ink/50 text-2xl text-ink/60 transition-colors hover:border-ink hover:text-ink active:scale-90"
                   aria-label="Add another photo"
                 >
                   +
                 </button>
               )}
             </div>
-          </div>
+          )}
+        </div>
 
-          {mode === "individual" && (
-            <input
-              value={names}
-              onChange={(e) => setNames(e.target.value)}
-              placeholder="Names, comma-separated (Krishna, Aisha, Dev)"
-              className="crew-reveal w-full rounded-xl border border-cream/20 bg-goa-green-deep/40 px-4 py-2.5 font-mono text-sm text-cream placeholder:text-cream/40 focus:border-sun-1 focus:outline-none"
+        <Tape />
+
+        <div className="px-5 py-5 sm:px-6">
+          <SectionTitle step={2} title="Crew profile" />
+          <div className="flex flex-col gap-3">
+            <label className="block">
+              <span className="hh-label mb-1.5 block text-ink/70">
+                Crew name <span className="text-ink/40">(optional)</span>
+              </span>
+              <input
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder="BinaryEXE"
+                maxLength={22}
+                className="hh-input"
+              />
+            </label>
+            {mode === "individual" && (
+              <label className="block">
+                <span className="hh-label mb-1.5 block text-ink/70">
+                  Member names
+                </span>
+                <input
+                  value={names}
+                  onChange={(e) => setNames(e.target.value)}
+                  placeholder="Krishna, Aisha, Dev"
+                  className="hh-input"
+                />
+                <span className="mt-1.5 block font-mono text-[0.66rem] text-ink/50">
+                  Comma-separated, in photo order.
+                </span>
+              </label>
+            )}
+          </div>
+        </div>
+
+        <Tape />
+
+        <div className="px-5 py-5 sm:px-6">
+          <SectionTitle step={3} title="Theme" />
+          <div className="flex flex-wrap gap-2.5">
+            {FRAME_STYLES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={(e) => {
+                  setStyle(s);
+                  pop(e.currentTarget);
+                }}
+                aria-pressed={s === style}
+                className="hh-tile"
+              >
+                <span
+                  aria-hidden
+                  className="h-4 w-4 rounded-full border-2 border-ink"
+                  style={{ background: STYLE_DOT[s] }}
+                />
+                {STYLE[s].label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Panel>
+
+      {/* --------------------------------------------------------- preview */}
+      <Panel className="lg:sticky lg:top-4">
+        <PanelHead title="Crew preview" />
+        <div className="flex flex-col items-center gap-4 px-5 py-6 sm:px-6">
+          {photos.length === 0 ? (
+            <div className="flex aspect-square w-full max-w-[360px] flex-col items-center justify-center gap-2 rounded-2xl border-[3px] border-dashed border-goa-green/40 bg-goa-green/10 px-6 text-center">
+              <CrewIcon className="h-8 w-8 text-goa-green/55" />
+              <span className="hh-h text-[1.25rem] text-goa-green/85">
+                Your crew pass lands here
+              </span>
+              <span className="font-mono text-[0.68rem] leading-relaxed text-ink/50">
+                Add up to {MAX} photos on the left.
+              </span>
+            </div>
+          ) : (
+            <canvas
+              ref={canvasRef}
+              aria-label="Team frame preview"
+              className="crew-reveal canvas-surface aspect-square w-full max-w-[360px] rounded-xl border-[3px] border-ink shadow-[6px_6px_0_var(--color-ink)]"
             />
           )}
-          <input
-            value={teamName}
-            onChange={(e) => setTeamName(e.target.value)}
-            placeholder="Crew name (optional)"
-            maxLength={22}
-            className="crew-reveal w-full rounded-xl border border-cream/20 bg-goa-green-deep/40 px-4 py-2.5 font-mono text-sm text-cream placeholder:text-cream/40 focus:border-sun-1 focus:outline-none"
-          />
 
-          {/* theme dots — same compact picker as the solo flow */}
-          <div className="crew-reveal flex w-full items-center justify-between gap-3">
-            <span className="font-mono text-[11px] uppercase tracking-widest text-cream/60">
-              Theme
-            </span>
-            <div className="flex items-center gap-2">
-              {FRAME_STYLES.map((s) => (
+          <div className="crew-reveal flex w-full flex-col gap-3">
+            {photos.length === 0 ? (
+              <button type="button" disabled className="hh-btn hh-btn-paper w-full">
+                Add a photo to start
+              </button>
+            ) : (
+              <>
                 <button
-                  key={s}
                   type="button"
-                  onClick={(e) => {
-                    setStyle(s);
-                    pop(e.currentTarget);
-                  }}
-                  aria-pressed={s === style}
-                  title={STYLE[s].label}
-                  aria-label={`${STYLE[s].label} theme`}
-                  className={`h-7 w-7 rounded-full transition ${
-                    s === style
-                      ? "ring-2 ring-sun-1 ring-offset-2 ring-offset-goa-green"
-                      : "opacity-70 hover:opacity-100"
-                  }`}
-                  style={{
-                    background: STYLE_DOT[s],
-                    border: "1px solid rgba(255,251,232,0.35)",
-                  }}
-                />
-              ))}
-            </div>
+                  onClick={onDownload}
+                  disabled={busy !== null}
+                  className="hh-btn hh-btn-sun w-full py-4 text-sm"
+                >
+                  {busy === "download" ? (
+                    "Rendering…"
+                  ) : (
+                    <>
+                      <DownloadIcon className="h-4 w-4" />
+                      Download PNG
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={onShare}
+                  disabled={busy !== null}
+                  className="hh-btn hh-btn-pink w-full py-4 text-sm"
+                >
+                  {busy === "share" ? (
+                    "Preparing…"
+                  ) : (
+                    <>
+                      <ShareIcon className="h-4 w-4" />
+                      Share to X · #{SHARE.hashtag}
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+            {note && (
+              <p className="rounded-lg border-2 border-ink/25 bg-paper-2 px-3 py-2 font-mono text-[0.7rem] text-ink/75">
+                {note}
+              </p>
+            )}
           </div>
-
-          <div className="crew-reveal flex w-full flex-col gap-2">
-            <div className="flex w-full flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={onDownload}
-                disabled={busy !== null}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
-              >
-                {busy === "download" ? (
-                  "Rendering…"
-                ) : (
-                  <>
-                    <DownloadIcon className="h-4 w-4" />
-                    Download PNG
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={onShare}
-                disabled={busy !== null}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
-              >
-                {busy === "share" ? (
-                  "Preparing…"
-                ) : (
-                  <>
-                    <ShareIcon className="h-4 w-4" />
-                    Share to X · #{SHARE.hashtag}
-                  </>
-                )}
-              </button>
-            </div>
-            {note && <p className="font-mono text-xs text-cream/70">{note}</p>}
-          </div>
-        </>
-      )}
+        </div>
+      </Panel>
 
       <input
         ref={inputRef}
