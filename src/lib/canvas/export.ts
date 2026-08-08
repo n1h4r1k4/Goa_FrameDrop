@@ -3,7 +3,12 @@
  * return a real PNG Blob. See the frame-generator skill.
  */
 import { MAX_CANVAS_AREA, MAX_CANVAS_SIDE, TARGET_DPR } from "./constants";
-import { compose, type ComposeInput } from "./compose";
+import {
+  compose,
+  composeTeam,
+  type ComposeInput,
+  type TeamComposeInput,
+} from "./compose";
 import { ensureFontsLoaded } from "./fonts";
 import { SHAPE } from "./shapes";
 
@@ -39,6 +44,33 @@ export async function renderToBlob(input: RenderInput): Promise<Blob> {
   if (!blob) {
     throw new Error("Export failed — the image may be too large for this browser.");
   }
+  return blob;
+}
+
+export type RenderTeamInput = Omit<TeamComposeInput, "ctx" | "w" | "h"> & {
+  size?: number;
+};
+
+/** Render a team/combined frame (square) to a PNG Blob. */
+export async function renderTeamToBlob(input: RenderTeamInput): Promise<Blob> {
+  const S = input.size ?? 1200;
+  const scale = exportScale(S, S);
+  const side = Math.round(S * scale);
+
+  await ensureFontsLoaded();
+
+  const canvas = document.createElement("canvas");
+  canvas.width = side;
+  canvas.height = side;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable.");
+
+  composeTeam({ ...input, ctx, w: side, h: side });
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/png"),
+  );
+  if (!blob) throw new Error("Export failed — the image may be too large.");
   return blob;
 }
 

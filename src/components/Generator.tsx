@@ -5,6 +5,7 @@ import Uploader from "./Uploader";
 import FrameCanvas from "./FrameCanvas";
 import FrameControls from "./FrameControls";
 import ResultActions from "./ResultActions";
+import TeamMode from "./TeamMode";
 import { DEFAULT_PLACEMENT, type Placement } from "@/lib/canvas/transform";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Identity } from "@/lib/canvas/compose";
@@ -12,7 +13,10 @@ import type { FrameStyle } from "@/lib/canvas/styles";
 import type { FrameShape } from "@/lib/canvas/shapes";
 import { builderClass } from "@/lib/badge";
 
+type Mode = "solo" | "team";
+
 export default function Generator() {
+  const [mode, setMode] = useState<Mode>("solo");
   const [photo, setPhoto] = useState<DecodedPhoto | null>(null);
   const [placement, setPlacement] = useState<Placement>(DEFAULT_PLACEMENT);
   const [style, setStyle] = useState<FrameStyle>("sunset");
@@ -36,7 +40,28 @@ export default function Generator() {
 
   return (
     <section className="mx-auto mt-10 w-full max-w-md">
-      {!photo ? (
+      {/* Solo / Team toggle */}
+      <div className="mb-6 flex justify-center gap-2">
+        {(["solo", "team"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMode(m)}
+            aria-pressed={mode === m}
+            className={`rounded-full px-6 py-2 font-mono text-xs uppercase tracking-widest transition-colors ${
+              mode === m
+                ? "bg-sun-1 text-goa-green-deep"
+                : "border border-cream/25 text-cream/75 hover:border-sun-1/70"
+            }`}
+          >
+            {m === "solo" ? "Solo" : "Team"}
+          </button>
+        ))}
+      </div>
+
+      {mode === "team" ? (
+        <TeamMode />
+      ) : !photo ? (
         <Uploader onPhoto={onPhoto} />
       ) : (
         <div className="flex flex-col items-center gap-5">

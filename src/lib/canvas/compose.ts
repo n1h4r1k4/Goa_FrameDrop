@@ -585,3 +585,125 @@ function drawPanel(
     p.y + p.h * (identity?.name && identity.builderClass ? 0.86 : 0.78),
   );
 }
+
+// ---------- team / combined frame ----------
+
+export type TeamPhoto = { photo: CanvasImageSource; size: PhotoSize };
+export type TeamComposeInput = {
+  ctx: CanvasRenderingContext2D;
+  w: number;
+  h: number;
+  photos: TeamPhoto[];
+  style?: FrameStyle;
+  teamName?: string;
+};
+
+/** Grid cell rects for n photos within a region: 2=cols, 3=2-over-1, 4=2x2. */
+function teamCells(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  n: number,
+): number[][] {
+  const g = Math.min(w, h) * 0.03;
+  if (n <= 1) return [[x, y, w, h]];
+  if (n === 2) {
+    const cw = (w - g) / 2;
+    return [
+      [x, y, cw, h],
+      [x + cw + g, y, cw, h],
+    ];
+  }
+  if (n === 3) {
+    const cw = (w - g) / 2;
+    const ch = (h - g) / 2;
+    return [
+      [x, y, cw, ch],
+      [x + cw + g, y, cw, ch],
+      [x, y + ch + g, w, ch],
+    ];
+  }
+  const cw = (w - g) / 2;
+  const ch = (h - g) / 2;
+  return [
+    [x, y, cw, ch],
+    [x + cw + g, y, cw, ch],
+    [x, y + ch + g, cw, ch],
+    [x + cw + g, y + ch + g, cw, ch],
+  ];
+}
+
+export function composeTeam(input: TeamComposeInput): void {
+  const { ctx, w: W, h: H, photos, teamName } = input;
+  const cfg = STYLE[input.style ?? "sunset"];
+  const u = W / 1200;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = COLORS.goaGreen;
+  ctx.fillRect(0, 0, W, H);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  const pad = W * 0.035;
+  const bandH = H * 0.2;
+  const gx = pad * 1.7;
+  const gy = pad * 1.7;
+  const gw = W - gx * 2;
+  const gh = H - bandH - gy - pad * 1.2;
+  const n = Math.max(1, Math.min(4, photos.length));
+  const rects = teamCells(gx, gy, gw, gh, n);
+
+  for (let i = 0; i < n; i++) {
+    const [cx, cy, cw, ch] = rects[i];
+    ctx.save();
+    roundRectPath(ctx, cx, cy, cw, ch, W * 0.026);
+    ctx.clip();
+    const r = coverRectIn(cx, cy, cw, ch, photos[i].size, {
+      scale: 1,
+      offsetX: 0,
+      offsetY: 0,
+    });
+    ctx.drawImage(photos[i].photo, r.x, r.y, r.w, r.h);
+    ctx.restore();
+    ctx.save();
+    roundRectPath(ctx, cx, cy, cw, ch, W * 0.026);
+    ctx.lineWidth = W * 0.006;
+    ctx.strokeStyle = cfg.accent;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // bottom band scene + team text
+  const bandY = H - bandH;
+  const scrim = ctx.createLinearGradient(0, bandY - bandH * 0.4, 0, H);
+  scrim.addColorStop(0, "rgba(10,42,24,0)");
+  scrim.addColorStop(0.5, cfg.scrim);
+  scrim.addColorStop(1, cfg.scrim);
+  ctx.fillStyle = scrim;
+  ctx.fillRect(0, bandY - bandH * 0.4, W, bandH * 1.4);
+
+  drawCelestial(ctx, W / 2, bandY + bandH * 0.42, bandH * 0.3, cfg);
+  drawPalmAt(ctx, pad + W * 0.03, H - pad * 1.1, bandH * 0.92, false, cfg.palmColor);
+  drawPalmAt(ctx, W - pad - W * 0.03, H - pad * 1.1, bandH * 0.92, true, cfg.palmColor);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = cfg.accent;
+  ctx.font = `800 ${u * 76}px ${FONT.display()}`;
+  ctx.fillText(truncate(teamName?.trim() || "THE CREW", 20), W / 2, bandY + bandH * 0.52);
+  ctx.fillStyle = COLORS.cream;
+  ctx.font = `500 ${u * 26}px ${FONT.mono()}`;
+  ctx.fillText(`HH GOA 2026  ·  #${SHARE.hashtag}`, W / 2, bandY + bandH * 0.72);
+
+  // outer border + stamp
+  roundRectPath(ctx, pad, pad, W - pad * 2, H - pad * 2, W * 0.045);
+  const bg = ctx.createLinearGradient(pad, pad, W - pad, H - pad);
+  bg.addColorStop(0, cfg.border[0]);
+  bg.addColorStop(0.5, cfg.border[1]);
+  bg.addColorStop(1, cfg.border[2]);
+  ctx.lineWidth = W * 0.018;
+  ctx.strokeStyle = bg;
+  ctx.stroke();
+  drawStamp(ctx, W - pad - W * 0.02 - u * 150, pad + W * 0.05, u, cfg);
+}
