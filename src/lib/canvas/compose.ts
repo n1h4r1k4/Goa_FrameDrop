@@ -9,6 +9,7 @@ import { coverRectIn, type Placement, type PhotoSize } from "./transform";
 import { FONT } from "./fonts";
 import { STYLE, type FrameStyle, type StyleConfig } from "./styles";
 import { SHAPE, type FrameShape } from "./shapes";
+import { makeQR, metadataText, type QRMatrix } from "@/lib/qr";
 
 const PINK = COLORS.pink;
 const CREAM = COLORS.cream;
@@ -70,7 +71,9 @@ export function compose(input: ComposeInput): void {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  if (shapeCfg.mode === "badge") {
+  if (shapeCfg.mode === "ticket") {
+    composeTicket(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity);
+  } else if (shapeCfg.mode === "badge") {
     composeBadge(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity, shapeCfg);
   } else {
     composeBleed(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity);
@@ -498,6 +501,207 @@ function composeBadge(
   }
 
   drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.055, u, SUN);
+}
+
+// ---------- ticket / boarding-pass ID ----------
+
+function drawWordmark(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  baseY: number,
+  size: number,
+  accent: string,
+): void {
+  const disp = FONT.display();
+  const deva = FONT.deva();
+  const gap = size * 0.14;
+  ctx.textBaseline = "alphabetic";
+  ctx.font = `800 ${size}px ${disp}`;
+  const w1 = ctx.measureText("HACKER").width;
+  const w3 = ctx.measureText("HOUSE").width;
+  ctx.font = `800 ${size * 0.64}px ${deva}`;
+  const wd = ctx.measureText("गोवा").width;
+  const total = w1 + gap + wd + gap + w3;
+  let x = cx - total / 2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = accent;
+  ctx.font = `800 ${size}px ${disp}`;
+  ctx.fillText("HACKER", x, baseY);
+  x += w1 + gap;
+  ctx.font = `800 ${size * 0.64}px ${deva}`;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = CREAM;
+  ctx.lineWidth = size * 0.05;
+  ctx.strokeText("गोवा", x, baseY - size * 0.02);
+  ctx.fillStyle = PINK;
+  ctx.fillText("गोवा", x, baseY - size * 0.02);
+  x += wd + gap;
+  ctx.fillStyle = accent;
+  ctx.font = `800 ${size}px ${disp}`;
+  ctx.fillText("HOUSE", x, baseY);
+  ctx.textAlign = "center";
+}
+
+function drawQR(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  box: number,
+  m: QRMatrix,
+): void {
+  roundRectPath(ctx, x, y, box, box, box * 0.06);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  const pad = box * 0.09;
+  const cell = (box - pad * 2) / m.size;
+  ctx.fillStyle = DEEP;
+  for (let r = 0; r < m.size; r++) {
+    for (let c = 0; c < m.size; c++) {
+      if (m.get(r, c)) {
+        ctx.fillRect(x + pad + c * cell, y + pad + r * cell, Math.ceil(cell), Math.ceil(cell));
+      }
+    }
+  }
+}
+
+function drawBarcode(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  ctx.fillStyle = DEEP;
+  const ws = [3, 2, 5, 2, 3, 4, 6, 2, 3, 2, 5, 3, 2, 4, 2, 3, 6, 2, 4, 2, 3, 5, 2, 3, 2];
+  const unit = w / 70;
+  let cx = x;
+  let i = 0;
+  while (cx < x + w) {
+    const bw = ws[i % ws.length] * unit;
+    if (i % 2 === 0) ctx.fillRect(cx, y, Math.max(1, bw * 0.6), h);
+    cx += bw;
+    i++;
+  }
+}
+
+function composeTicket(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  k: number,
+  win: Win,
+  cfg: StyleConfig,
+  photo: CanvasImageSource,
+  photoSize: PhotoSize,
+  placement: Placement,
+  identity: Identity | undefined,
+): void {
+  const u = k;
+  const m = W * 0.03;
+  const cx = W / 2;
+
+  drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+
+  // header
+  drawWordmark(ctx, cx, u * 116, u * 60, cfg.accent);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = PINK;
+  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+  ctx.fillText(`BUILDER PASS · #${SHARE.hashtag}`, cx, u * 160);
+
+  // photo window
+  ctx.save();
+  roundRectPath(ctx, win.x, win.y, win.w, win.h, win.radius);
+  ctx.clip();
+  const r = coverRectIn(win.x, win.y, win.w, win.h, photoSize, placement);
+  ctx.drawImage(photo, r.x, r.y, r.w, r.h);
+  ctx.restore();
+  roundRectPath(ctx, win.x, win.y, win.w, win.h, win.radius);
+  ctx.lineWidth = W * 0.012;
+  ctx.strokeStyle = PINK;
+  ctx.stroke();
+
+  // name ribbon
+  const p = { x: u * 70, y: u * 840, w: u * 860, h: u * 150 };
+  roundRectPath(ctx, p.x, p.y, p.w, p.h, u * 22);
+  ctx.fillStyle = CREAM;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, u * 3.5);
+  ctx.strokeStyle = PINK;
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = DEEP;
+  ctx.font = `800 ${u * 56}px ${FONT.display()}`;
+  ctx.fillText(truncate(identity?.name || "BUILDER", 18), cx, p.y + p.h * 0.5);
+  ctx.fillStyle = PINK;
+  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+  ctx.fillText(
+    identity?.builderClass ? `// ${identity.builderClass.toUpperCase()}` : "HH GOA 2026",
+    cx,
+    p.y + p.h * 0.82,
+  );
+
+  // perforation
+  const perfY = u * 1050;
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,251,232,0.5)";
+  ctx.setLineDash([u * 10, u * 8]);
+  ctx.lineWidth = Math.max(1, u * 2);
+  ctx.beginPath();
+  ctx.moveTo(m + u * 20, perfY);
+  ctx.lineTo(W - m - u * 20, perfY);
+  ctx.stroke();
+  ctx.restore();
+
+  // stub — left fields
+  const lx = u * 82;
+  const field = (label: string, val: string, y: number, vs = 38) => {
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(255,251,232,0.6)";
+    ctx.font = `600 ${u * 20}px ${FONT.mono()}`;
+    ctx.fillText(label, lx, y);
+    ctx.fillStyle = cfg.accent;
+    ctx.font = `800 ${u * vs}px ${FONT.display()}`;
+    ctx.fillText(val, lx, y + u * (vs + 4));
+  };
+  field("GATE", "THE SANDS", u * 1112);
+  field("SEAT", (identity?.builderClass || "BUILDER").toUpperCase().slice(0, 14), u * 1212);
+  ctx.textAlign = "left";
+  ctx.fillStyle = CREAM;
+  ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
+  ctx.fillText(
+    identity?.handle ? `@${identity.handle.replace(/^@/, "")}` : `#${SHARE.hashtag}`,
+    lx,
+    u * 1300,
+  );
+  ctx.fillStyle = "rgba(255,251,232,0.8)";
+  ctx.font = `500 ${u * 19}px ${FONT.mono()}`;
+  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, lx, u * 1332);
+  drawBarcode(ctx, lx, u * 1372, u * 360, u * 56);
+
+  // stub — QR
+  const qbox = u * 236;
+  const qx = W - m - u * 36 - qbox;
+  const qy = u * 1092;
+  drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity)));
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,251,232,0.75)";
+  ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
+  ctx.fillText("SCAN FOR DETAILS", qx + qbox / 2, qy + qbox + u * 28);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = cfg.accent;
+  ctx.font = `700 ${u * 22}px ${FONT.mono()}`;
+  ctx.fillText("2:47 PM STUDIO", W - m - u * 24, H - m - u * 34);
+
+  // outer border + punched notches
+  pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.045, W);
+  ctx.fillStyle = GREEN;
+  ctx.beginPath();
+  ctx.arc(m, perfY, u * 18, 0, Math.PI * 2);
+  ctx.arc(W - m, perfY, u * 18, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 // ---------- image template overlay ----------

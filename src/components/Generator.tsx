@@ -6,7 +6,6 @@ import FrameCanvas from "./FrameCanvas";
 import FrameControls from "./FrameControls";
 import ResultActions from "./ResultActions";
 import TeamMode from "./TeamMode";
-import TemplateMode from "./TemplateMode";
 import { DEFAULT_PLACEMENT, type Placement } from "@/lib/canvas/transform";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Identity } from "@/lib/canvas/compose";
@@ -14,13 +13,12 @@ import type { FrameStyle } from "@/lib/canvas/styles";
 import type { FrameShape } from "@/lib/canvas/shapes";
 import { builderClass } from "@/lib/badge";
 
-type Tab = "profile" | "builderid" | "banner" | "team" | "templates";
+type Tab = "builderid" | "profile" | "banner" | "team";
 const TABS: { id: Tab; label: string }[] = [
-  { id: "profile", label: "Profile" },
   { id: "builderid", label: "Builder ID" },
+  { id: "profile", label: "Profile" },
   { id: "banner", label: "Banner" },
   { id: "team", label: "Team" },
-  { id: "templates", label: "Templates" },
 ];
 
 const pill = (active: boolean) =>
@@ -31,9 +29,8 @@ const pill = (active: boolean) =>
   }`;
 
 export default function Generator() {
-  const [tab, setTab] = useState<Tab>("profile");
+  const [tab, setTab] = useState<Tab>("builderid");
   const [profileShape, setProfileShape] = useState<Extract<FrameShape, "square" | "circle">>("square");
-  const [badgeShape, setBadgeShape] = useState<Extract<FrameShape, "tall" | "arch">>("tall");
 
   const [photo, setPhoto] = useState<DecodedPhoto | null>(null);
   const [placement, setPlacement] = useState<Placement>(DEFAULT_PLACEMENT);
@@ -42,7 +39,7 @@ export default function Generator() {
   const [handle, setHandle] = useState("");
 
   const shape: FrameShape =
-    tab === "profile" ? profileShape : tab === "builderid" ? badgeShape : "landscape";
+    tab === "profile" ? profileShape : tab === "banner" ? "landscape" : "ticket";
 
   const identity = useMemo<Identity>(
     () => ({
@@ -57,24 +54,6 @@ export default function Generator() {
     setPhoto(p);
     setPlacement(DEFAULT_PLACEMENT);
   }, []);
-
-  const subToggle =
-    tab === "profile"
-      ? ([
-          ["square", "Square"],
-          ["circle", "Circle"],
-        ] as const)
-      : tab === "builderid"
-        ? ([
-            ["tall", "Badge"],
-            ["arch", "Arch"],
-          ] as const)
-        : null;
-
-  const onSub = (v: string) => {
-    if (tab === "profile") setProfileShape(v as "square" | "circle");
-    else if (tab === "builderid") setBadgeShape(v as "tall" | "arch");
-  };
 
   return (
     <section className="mx-auto mt-8 w-full max-w-md">
@@ -95,19 +74,22 @@ export default function Generator() {
 
       {tab === "team" ? (
         <TeamMode />
-      ) : tab === "templates" ? (
-        <TemplateMode />
       ) : (
         <div className="flex flex-col items-center gap-5">
-          {subToggle && (
+          {tab === "profile" && (
             <div className="flex gap-2">
-              {subToggle.map(([v, label]) => (
+              {(
+                [
+                  ["square", "Square"],
+                  ["circle", "Circle"],
+                ] as const
+              ).map(([v, label]) => (
                 <button
                   key={v}
                   type="button"
-                  onClick={() => onSub(v)}
-                  aria-pressed={shape === v}
-                  className={pill(shape === v)}
+                  onClick={() => setProfileShape(v)}
+                  aria-pressed={profileShape === v}
+                  className={pill(profileShape === v)}
                 >
                   {label}
                 </button>
