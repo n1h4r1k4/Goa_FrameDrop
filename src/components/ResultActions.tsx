@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { renderToBlob, downloadBlob } from "@/lib/canvas/export";
+import {
+  renderToBlob,
+  renderToCanvas,
+  renderShareCardToBlob,
+  downloadBlob,
+} from "@/lib/canvas/export";
 import { shareImageFile, prefersNativeShare } from "@/lib/share/webshare";
 import { tweetUrl, openComposerTab } from "@/lib/share/intent";
 import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
@@ -131,7 +136,19 @@ export default function ResultActions({
       let url: string;
       let hosted = false;
       try {
-        const { shareId } = await uploadFrame(blob);
+        // upload the 1200×630 plate, not the pass — see composeShareCard
+        const pass = await renderToCanvas({
+          photo: photo.bitmap,
+          photoSize: photo.size,
+          placement,
+          identity,
+          style,
+          shape,
+          overlay,
+          finalized,
+        });
+        const card = await renderShareCardToBlob({ pass, style, identity });
+        const { shareId } = await uploadFrame(card);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`);
         hosted = true;
       } catch {

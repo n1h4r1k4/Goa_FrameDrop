@@ -1310,6 +1310,108 @@ export function composeCardBack(
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, S * 0.05, S);
 }
 
+/**
+ * The 1200×630 card X actually renders in a post.
+ *
+ * Pointing the OG tag at the pass itself doesn't work: a ticket is 2000×3000
+ * (0.67:1) and X only serves `summary_large_image` for something near 2:1 —
+ * anything portrait gets demoted to a thumbnail-sized summary card. So the pass
+ * is composited, whole and uncropped, onto a branded 1.9:1 plate.
+ */
+export function composeShareCard(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  pass: CanvasImageSource,
+  passW: number,
+  passH: number,
+  style: FrameStyle = "sunset",
+  identity?: Identity,
+  label = "BUILDER PASS",
+): void {
+  const cfg = STYLE[style];
+  const u = W / 1200;
+  const m = W * 0.018;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = cfg.bg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawSceneBackdrop(ctx, m, m, W - m * 2, H - m * 2, u, cfg);
+  drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
+
+  // pass on the left, contained so nothing is ever cropped
+  const s = Math.min((H - u * 76) / passH, (W * 0.42) / passW);
+  const pw = passW * s;
+  const ph = passH * s;
+  const px = W * 0.26 - pw / 2;
+  const py = (H - ph) / 2;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = u * 26;
+  ctx.shadowOffsetY = u * 8;
+  roundRectPath(ctx, px, py, pw, ph, u * 16);
+  ctx.fillStyle = cfg.bg;
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  roundRectPath(ctx, px, py, pw, ph, u * 16);
+  ctx.clip();
+  ctx.drawImage(pass, px, py, pw, ph);
+  ctx.restore();
+  roundRectPath(ctx, px, py, pw, ph, u * 16);
+  ctx.lineWidth = Math.max(1, u * 4);
+  ctx.strokeStyle = PINK;
+  ctx.stroke();
+
+  // wordmark + details on the right
+  const cx = W * 0.68;
+  drawWordmark(ctx, cx, H * 0.3, u * 52, cfg.accent);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = PINK;
+  ctx.font = `600 ${u * 22}px ${FONT.mono()}`;
+  ctx.fillText(`${label} · #${SHARE.hashtag}`, cx, H * 0.3 + u * 42);
+
+  const right = W - m - u * 40;
+  const maxW = right - (px + pw) - u * 40;
+  if (identity?.name) {
+    ctx.fillStyle = CREAM;
+    fitFont(ctx, identity.name, maxW, u * 62, FONT.display(), "800");
+    ctx.fillText(truncate(identity.name, 18), cx, H * 0.52);
+    const sub = subline(identity);
+    if (sub) {
+      ctx.fillStyle = cfg.accent;
+      fitFont(ctx, sub, maxW, u * 24, FONT.mono());
+      ctx.fillText(sub, cx, H * 0.6);
+    }
+    const stack = stackLabel(identity);
+    if (stack) {
+      ctx.fillStyle = "rgba(255,251,232,0.75)";
+      fitFont(ctx, stack, maxW, u * 20, FONT.mono(), "500");
+      ctx.fillText(stack, cx, H * 0.67);
+    }
+  }
+
+  ctx.fillStyle = "rgba(255,251,232,0.85)";
+  ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
+  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H * 0.82);
+
+  drawCornerTicks(
+    ctx,
+    m + u * 24,
+    m + u * 24,
+    W - m * 2 - u * 48,
+    H - m * 2 - u * 48,
+    u * 22,
+    "rgba(254,225,1,0.5)",
+    Math.max(1, u * 3),
+  );
+  pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, u * 26, W * 0.6);
+}
+
 // ---------- image template overlay ----------
 
 function composeOverlay(

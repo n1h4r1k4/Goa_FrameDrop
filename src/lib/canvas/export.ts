@@ -6,6 +6,7 @@ import { MAX_CANVAS_AREA, MAX_CANVAS_SIDE, TARGET_DPR } from "./constants";
 import {
   compose,
   composeCardBack,
+  composeShareCard,
   composeTeam,
   type ComposeInput,
   type Identity,
@@ -134,6 +135,40 @@ export async function renderCardBackToBlob(input: {
     canvas.toBlob(resolve, "image/png"),
   );
   if (!blob) throw new Error("Export failed — the image may be too large.");
+  return blob;
+}
+
+/** Fixed 1.9:1 plate X will render as a large image card. */
+export const SHARE_CARD = { w: 1200, h: 630 } as const;
+
+/** Composite an already-rendered pass onto the 1200×630 share plate. */
+export async function renderShareCardToBlob(input: {
+  pass: HTMLCanvasElement;
+  style?: FrameStyle;
+  identity?: Identity;
+  label?: string;
+}): Promise<Blob> {
+  await ensureFontsLoaded();
+  const canvas = document.createElement("canvas");
+  canvas.width = SHARE_CARD.w;
+  canvas.height = SHARE_CARD.h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable.");
+  composeShareCard(
+    ctx,
+    canvas.width,
+    canvas.height,
+    input.pass,
+    input.pass.width,
+    input.pass.height,
+    input.style,
+    input.identity,
+    input.label,
+  );
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/png"),
+  );
+  if (!blob) throw new Error("Share card export failed.");
   return blob;
 }
 

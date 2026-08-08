@@ -15,6 +15,7 @@ import {
   renderTeamToCanvas,
   renderCardBackToBlob,
   renderCardBackToCanvas,
+  renderShareCardToBlob,
   downloadBlob,
 } from "@/lib/canvas/export";
 import Card3D from "./Card3D";
@@ -338,7 +339,20 @@ export default function TeamMode() {
       let url: string;
       let hosted = false;
       try {
-        const { shareId } = await uploadFrame(blob);
+        // upload the 1200×630 plate, not the pass — see composeShareCard
+        const pass = await renderTeamToCanvas({
+          members: members(),
+          style,
+          teamName,
+          identity: crewIdentity,
+        });
+        const card = await renderShareCardToBlob({
+          pass,
+          style,
+          identity: crewIdentity,
+          label: "CREW PASS",
+        });
+        const { shareId } = await uploadFrame(card);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`, CAPTION);
         hosted = true;
       } catch {
