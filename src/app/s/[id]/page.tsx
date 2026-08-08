@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { decodeShareId } from "@/lib/share/shareId";
-import { EXPORT_SIZE } from "@/lib/canvas/constants";
 import { SHARE, LINKS, EVENT } from "@/lib/brand";
 
 type Params = { id: string };
@@ -26,9 +25,10 @@ export async function generateMetadata({
       description: DESCRIPTION,
       url: `/s/${id}`,
       type: "website",
-      images: [
-        { url: imageUrl, width: EXPORT_SIZE, height: EXPORT_SIZE, type: "image/png" },
-      ],
+      // No width/height: the share id only carries the URL, and the shapes
+      // differ (ticket 1000×1500, banner 1200×630, PFP square). Declaring one
+      // size for all of them was a lie that made crawlers mis-crop the preview.
+      images: [{ url: imageUrl, type: "image/png" }],
     },
     twitter: {
       card: "summary_large_image",
