@@ -19,8 +19,8 @@ import {
 } from "@/lib/canvas/export";
 import Card3D from "./Card3D";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
-import { shareImageFile } from "@/lib/share/webshare";
-import { tweetUrl } from "@/lib/share/intent";
+import { shareImageFile, prefersNativeShare } from "@/lib/share/webshare";
+import { tweetUrl, openComposerTab } from "@/lib/share/intent";
 import { uploadFrame } from "@/lib/blob/client";
 import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
 import { SHARE } from "@/lib/brand";
@@ -311,27 +311,40 @@ export default function TeamMode() {
   };
 
   const onShare = async () => {
-    setBusy("share");
     setNote(null);
+
+    // phone/tablet: the OS sheet lists X and carries the real PNG
+    if (prefersNativeShare()) {
+      setBusy("share");
+      try {
+        const res = await shareImageFile(await build(), CAPTION, fileName);
+        if (res !== "unsupported") return;
+      } catch {
+        /* fall through to the composer */
+      } finally {
+        setBusy(null);
+      }
+    }
+
+    // desktop: open the composer inside the click, then navigate it
+    const win = openComposerTab();
+    setBusy("share");
     try {
       const blob = await build();
-      const res = await shareImageFile(blob, CAPTION, fileName);
-      if (res === "unsupported") {
-        try {
-          const { shareId } = await uploadFrame(blob);
-          window.open(
-            tweetUrl(`${window.location.origin}/s/${shareId}`, CAPTION),
-            "_blank",
-            "noopener,noreferrer",
-          );
-          setNote("Opened X with a preview link.");
-        } catch {
-          window.open(tweetUrl(undefined, CAPTION), "_blank", "noopener,noreferrer");
-          downloadBlob(blob, fileName);
-          setNote("Opened X. Image downloaded so you can attach it.");
-        }
+      let url: string;
+      try {
+        const { shareId } = await uploadFrame(blob);
+        url = tweetUrl(`${window.location.origin}/s/${shareId}`, CAPTION);
+        setNote("Opened X — your crew pass is the link preview on the post.");
+      } catch {
+        url = tweetUrl(undefined, CAPTION);
+        downloadBlob(blob, fileName);
+        setNote("Opened X. Image downloaded so you can attach it.");
       }
+      if (win) win.location.replace(url);
+      else window.open(url, "_blank", "noopener,noreferrer");
     } catch {
+      win?.close();
       setNote("Couldn't prepare the share. Try Download.");
     } finally {
       setBusy(null);

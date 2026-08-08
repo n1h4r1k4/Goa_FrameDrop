@@ -11,5 +11,25 @@ export function tweetUrl(
   params.set("text", text);
   params.set("hashtags", SHARE.hashtag);
   if (shareUrl) params.set("url", shareUrl);
-  return `https://twitter.com/intent/tweet?${params.toString()}`;
+  // x.com directly — twitter.com/intent only 302s here anyway
+  return `https://x.com/intent/tweet?${params.toString()}`;
+}
+
+/**
+ * Open the composer tab *now*, synchronously inside the click, and hand back a
+ * handle to point at the intent once the image is hosted. Awaiting first and
+ * opening later spends the user activation and the popup gets blocked.
+ *
+ * Deliberately opened without `noopener`: that flag makes window.open() return
+ * null, and we need the handle to navigate it. The destination is x.com.
+ */
+export function openComposerTab(): Window | null {
+  const win = window.open("about:blank", "_blank");
+  win?.document?.write(
+    `<!doctype html><title>Preparing your post…</title>
+     <body style="margin:0;display:grid;place-items:center;height:100vh;
+       background:#060d0a;color:#fffbe8;font:600 14px ui-monospace,monospace;
+       letter-spacing:.12em;text-transform:uppercase">Preparing your post…</body>`,
+  );
+  return win;
 }

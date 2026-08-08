@@ -5,6 +5,20 @@
  */
 export type ShareResult = "shared" | "cancelled" | "unsupported";
 
+/**
+ * Should we hand off to the OS share sheet at all?
+ *
+ * Only on touch devices. Desktop Chromium *does* implement Web Share for files,
+ * but the macOS/Windows sheet it opens offers AirDrop / Mail / Notes and no X —
+ * so "Share to X" would dead-end in the OS picker. On a pointer device we skip
+ * it and drive the X composer directly.
+ */
+export function prefersNativeShare(): boolean {
+  if (typeof window === "undefined") return false;
+  const coarse = window.matchMedia?.("(pointer: coarse)")?.matches ?? false;
+  return coarse && canShareFiles();
+}
+
 export function canShareFiles(file?: File): boolean {
   if (typeof navigator === "undefined" || typeof navigator.canShare !== "function")
     return false;

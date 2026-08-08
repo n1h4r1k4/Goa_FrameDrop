@@ -15,7 +15,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       request,
       onBeforeGenerateToken: async () => ({
         allowedContentTypes: ["image/png"],
-        maximumSizeInBytes: 6_000_000,
+        // A retina ticket is 2000×3000 and a crew card 2400²; both clear 6 MB,
+        // and hitting the cap silently dropped the share to a text-only post.
+        maximumSizeInBytes: 20_000_000,
         addRandomSuffix: true,
       }),
       // Not reachable on localhost; the browser gets the URL from upload() directly.

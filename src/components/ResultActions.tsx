@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { renderToBlob, downloadBlob } from "@/lib/canvas/export";
-import { shareImageFile, canShareFiles } from "@/lib/share/webshare";
-import { tweetUrl } from "@/lib/share/intent";
+import { shareImageFile, prefersNativeShare } from "@/lib/share/webshare";
+import { tweetUrl, openComposerTab } from "@/lib/share/intent";
 import { uploadFrame } from "@/lib/blob/client";
 import { DownloadIcon, ShareIcon } from "./icons";
 import { SHARE } from "@/lib/brand";
@@ -100,32 +100,42 @@ export default function ResultActions({
 
   const onShare = async () => {
     setNote(null);
-    // fast path: cached blob + native share (synchronous → preserves activation)
-    if (!dirtyRef.current && blobRef.current && canShareFiles()) {
-      const res = await shareImageFile(blobRef.current, SHARE.defaultCaption);
-      if (res !== "unsupported") return;
+
+    // Phone/tablet: the OS sheet lists X and carries the real PNG. Fire it as
+    // synchronously as possible so the activation survives.
+    if (prefersNativeShare()) {
+      try {
+        const blob =
+          !dirtyRef.current && blobRef.current ? blobRef.current : await build();
+        const res = await shareImageFile(blob, SHARE.defaultCaption, fileName);
+        if (res !== "unsupported") return;
+      } catch {
+        /* fall through to the composer */
+      }
     }
+
+    // Desktop: straight to the X composer. Open the tab inside the click, then
+    // point it at the intent once the PNG is hosted and the OG link exists.
+    const win = openComposerTab();
     setBusy("share");
     try {
       const blob =
         !dirtyRef.current && blobRef.current ? blobRef.current : await build();
-      const res = await shareImageFile(blob, SHARE.defaultCaption);
-      if (res === "unsupported") {
-        // Desktop / no file-share: upload to Blob and share a /s/[id] link whose
-        // OG image IS the generated graphic, so the X preview shows it.
-        try {
-          const { shareId } = await uploadFrame(blob);
-          const shareUrl = `${window.location.origin}/s/${shareId}`;
-          window.open(tweetUrl(shareUrl), "_blank", "noopener,noreferrer");
-          setNote("Opened X with a preview link. You can also Download the PNG.");
-        } catch {
-          // Blob not configured / offline: text intent + hand them the file.
-          window.open(tweetUrl(), "_blank", "noopener,noreferrer");
-          downloadBlob(blob, fileName);
-          setNote("Opened X. Image downloaded so you can attach it to the post.");
-        }
+      let url: string;
+      try {
+        const { shareId } = await uploadFrame(blob);
+        url = tweetUrl(`${window.location.origin}/s/${shareId}`);
+        setNote("Opened X — your pass is the link preview on the post.");
+      } catch {
+        // Blob not configured / offline: text intent + hand them the file.
+        url = tweetUrl();
+        downloadBlob(blob, fileName);
+        setNote("Opened X. Image downloaded so you can attach it to the post.");
       }
+      if (win) win.location.replace(url);
+      else window.open(url, "_blank", "noopener,noreferrer");
     } catch {
+      win?.close();
       setNote("Couldn't prepare the share. Try Download instead.");
     } finally {
       setBusy(null);
