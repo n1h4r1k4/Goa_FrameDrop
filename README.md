@@ -2,7 +2,7 @@
 
 Upload a photo → get an unmistakable **HH Goa 2026** profile frame → download it or share to X with **#FrameInGoa**. Built for the HH Goa 2026 shortlisting task (Format A: PFP frame / overlay).
 
-**Live:** _add after deploy_
+**Live:** https://id-gen-theta.vercel.app
 
 ## Features
 
