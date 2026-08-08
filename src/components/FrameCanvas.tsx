@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { compose, type Identity } from "@/lib/canvas/compose";
+import { compose, type Identity, type OverlaySpec } from "@/lib/canvas/compose";
 import {
   clamp,
   panToOffsetDelta,
@@ -19,6 +19,7 @@ type Props = {
   identity?: Identity;
   style?: FrameStyle;
   shape?: FrameShape;
+  overlay?: OverlaySpec;
   onPlacementChange: (p: Placement) => void;
 };
 
@@ -31,18 +32,20 @@ export default function FrameCanvas({
   identity,
   style,
   shape = "square",
+  overlay,
   onPlacementChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const placementRef = useRef(placement);
   placementRef.current = placement;
   const cfg = SHAPE[shape];
+  const hOverW = overlay ? 1 : cfg.h / cfg.w;
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const cssW = canvas.clientWidth || 340;
-    const cssH = cssW * (cfg.h / cfg.w);
+    const cssH = cssW * hOverW;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = Math.round(cssW * dpr);
     const h = Math.round(cssH * dpr);
@@ -62,8 +65,9 @@ export default function FrameCanvas({
       identity,
       style,
       shape,
+      overlay,
     });
-  }, [photo, photoSize, identity, style, shape, cfg.h, cfg.w]);
+  }, [photo, photoSize, identity, style, shape, overlay, hOverW]);
 
   useEffect(() => {
     ensureFontsLoaded().then(draw);
@@ -80,11 +84,11 @@ export default function FrameCanvas({
 
     const winSize = () => {
       const cssW = canvas.getBoundingClientRect().width || 340;
-      const cssH = cssW * (cfg.h / cfg.w);
-      return {
-        w: (cfg.window.w / cfg.w) * cssW,
-        h: (cfg.window.h / cfg.h) * cssH,
-      };
+      const cssH = cssW * hOverW;
+      const wf = overlay
+        ? overlay.window
+        : { w: cfg.window.w / cfg.w, h: cfg.window.h / cfg.h };
+      return { w: wf.w * cssW, h: wf.h * cssH };
     };
 
     const onDown = (e: PointerEvent) => {
@@ -154,7 +158,7 @@ export default function FrameCanvas({
       canvas.removeEventListener("pointercancel", onUp);
       canvas.removeEventListener("wheel", onWheel);
     };
-  }, [photoSize, onPlacementChange, cfg]);
+  }, [photoSize, onPlacementChange, cfg, overlay, hOverW]);
 
   return (
     <canvas
@@ -162,8 +166,8 @@ export default function FrameCanvas({
       aria-label="Your HH Goa 2026 frame preview. Drag to reposition, pinch or scroll to zoom"
       className="canvas-surface settle w-full cursor-grab touch-none rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] active:cursor-grabbing"
       style={{
-        aspectRatio: `${cfg.w} / ${cfg.h}`,
-        maxWidth: cfg.mode === "badge" ? 320 : cfg.h === 630 ? 460 : 360,
+        aspectRatio: overlay ? "1 / 1" : `${cfg.w} / ${cfg.h}`,
+        maxWidth: !overlay && cfg.mode === "badge" ? 320 : !overlay && cfg.h === 630 ? 460 : 360,
       }}
     />
   );

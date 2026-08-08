@@ -23,10 +23,17 @@ export type RenderInput = Omit<ComposeInput, "ctx" | "w" | "h">;
 
 /** Render the composed graphic to a PNG Blob at retina resolution. */
 export async function renderToBlob(input: RenderInput): Promise<Blob> {
-  const cfg = SHAPE[input.shape ?? "square"];
-  const scale = exportScale(cfg.w, cfg.h);
-  const w = Math.round(cfg.w * scale);
-  const h = Math.round(cfg.h * scale);
+  let w: number;
+  let h: number;
+  if (input.overlay) {
+    w = 1080;
+    h = 1080;
+  } else {
+    const cfg = SHAPE[input.shape ?? "square"];
+    const scale = exportScale(cfg.w, cfg.h);
+    w = Math.round(cfg.w * scale);
+    h = Math.round(cfg.h * scale);
+  }
 
   await ensureFontsLoaded();
 

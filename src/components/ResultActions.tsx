@@ -8,7 +8,7 @@ import { uploadFrame } from "@/lib/blob/client";
 import { SHARE } from "@/lib/brand";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Placement } from "@/lib/canvas/transform";
-import type { Identity } from "@/lib/canvas/compose";
+import type { Identity, OverlaySpec } from "@/lib/canvas/compose";
 import type { FrameStyle } from "@/lib/canvas/styles";
 import { SHAPE, type FrameShape } from "@/lib/canvas/shapes";
 
@@ -18,6 +18,7 @@ type Props = {
   identity: Identity;
   style: FrameStyle;
   shape: FrameShape;
+  overlay?: OverlaySpec;
 };
 
 export default function ResultActions({
@@ -26,8 +27,9 @@ export default function ResultActions({
   identity,
   style,
   shape,
+  overlay,
 }: Props) {
-  const fileName = `${SHAPE[shape].fileName}.png`;
+  const fileName = overlay ? "hh-goa-frame.png" : `${SHAPE[shape].fileName}.png`;
   const [busy, setBusy] = useState<null | "download" | "share">(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -43,6 +45,7 @@ export default function ResultActions({
       identity,
       style,
       shape,
+      overlay,
     });
     blobRef.current = blob;
     dirtyRef.current = false;
@@ -67,6 +70,7 @@ export default function ResultActions({
     identity.builderClass,
     style,
     shape,
+    overlay,
   ]);
 
   const onDownload = async () => {

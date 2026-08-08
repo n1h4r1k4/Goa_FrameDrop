@@ -6,6 +6,7 @@ import FrameCanvas from "./FrameCanvas";
 import FrameControls from "./FrameControls";
 import ResultActions from "./ResultActions";
 import TeamMode from "./TeamMode";
+import TemplateMode from "./TemplateMode";
 import { DEFAULT_PLACEMENT, type Placement } from "@/lib/canvas/transform";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Identity } from "@/lib/canvas/compose";
@@ -13,12 +14,13 @@ import type { FrameStyle } from "@/lib/canvas/styles";
 import type { FrameShape } from "@/lib/canvas/shapes";
 import { builderClass } from "@/lib/badge";
 
-type Tab = "profile" | "builderid" | "banner" | "team";
+type Tab = "profile" | "builderid" | "banner" | "team" | "templates";
 const TABS: { id: Tab; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "builderid", label: "Builder ID" },
   { id: "banner", label: "Banner" },
   { id: "team", label: "Team" },
+  { id: "templates", label: "Templates" },
 ];
 
 const pill = (active: boolean) =>
@@ -93,6 +95,8 @@ export default function Generator() {
 
       {tab === "team" ? (
         <TeamMode />
+      ) : tab === "templates" ? (
+        <TemplateMode />
       ) : (
         <div className="flex flex-col items-center gap-5">
           {subToggle && (

@@ -18,6 +18,12 @@ const DEEP = COLORS.goaGreenDeep;
 
 export type Identity = { name?: string; handle?: string; builderClass?: string };
 
+/** An image template overlay with a transparent photo window (fractions of the canvas). */
+export type OverlaySpec = {
+  img: CanvasImageSource;
+  window: { x: number; y: number; w: number; h: number };
+};
+
 export type ComposeInput = {
   ctx: CanvasRenderingContext2D;
   w: number;
@@ -28,6 +34,7 @@ export type ComposeInput = {
   identity?: Identity;
   style?: FrameStyle;
   shape?: FrameShape;
+  overlay?: OverlaySpec;
 };
 
 type Win = {
@@ -41,6 +48,10 @@ type Win = {
 
 export function compose(input: ComposeInput): void {
   const { ctx, w, h, photo, photoSize, placement, identity } = input;
+  if (input.overlay) {
+    composeOverlay(ctx, w, h, photo, photoSize, placement, input.overlay);
+    return;
+  }
   const shapeCfg = SHAPE[input.shape ?? "square"];
   const cfg = STYLE[input.style ?? "sunset"];
   const k = w / shapeCfg.w;
@@ -487,6 +498,38 @@ function composeBadge(
   }
 
   drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.055, u, SUN);
+}
+
+// ---------- image template overlay ----------
+
+function composeOverlay(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  photo: CanvasImageSource,
+  photoSize: PhotoSize,
+  placement: Placement,
+  ov: OverlaySpec,
+): void {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = GREEN;
+  ctx.fillRect(0, 0, W, H);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  const win = {
+    x: ov.window.x * W,
+    y: ov.window.y * H,
+    w: ov.window.w * W,
+    h: ov.window.h * H,
+  };
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(win.x, win.y, win.w, win.h);
+  ctx.clip();
+  const r = coverRectIn(win.x, win.y, win.w, win.h, photoSize, placement);
+  ctx.drawImage(photo, r.x, r.y, r.w, r.h);
+  ctx.restore();
+  ctx.drawImage(ov.img, 0, 0, W, H);
 }
 
 // ---------- team / combined frame ----------
