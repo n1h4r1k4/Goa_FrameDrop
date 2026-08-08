@@ -270,24 +270,25 @@
     -webkit-user-select: none;
     user-select: none;
   }
-}
 
-/* press physics: the sheet lifts on hover and gets pushed into the page on click */
-@media (prefers-reduced-motion: no-preference) {
-  .hh-btn:hover:not(:disabled),
-  .hh-tile:hover:not(:disabled) {
-    translate: -2px -2px;
-    box-shadow: 6px 6px 0 var(--color-ink);
-  }
-  .hh-mode:hover:not(:disabled) {
-    translate: -2px -2px;
-    box-shadow: 8px 8px 0 var(--color-ink);
-  }
-  .hh-btn:active:not(:disabled),
-  .hh-tile:active:not(:disabled),
-  .hh-mode:active:not(:disabled) {
-    translate: 2px 2px;
-    box-shadow: 1px 1px 0 var(--color-ink);
+  /* press physics: the sheet lifts under the cursor, then gets pushed into the
+     page on click — the shadow does the work, so nothing reflows */
+  @media (prefers-reduced-motion: no-preference) {
+    .hh-btn:hover:not(:disabled),
+    .hh-tile:hover:not(:disabled) {
+      translate: -2px -2px;
+      box-shadow: 6px 6px 0 var(--color-ink);
+    }
+    .hh-mode:hover:not(:disabled) {
+      translate: -2px -2px;
+      box-shadow: 8px 8px 0 var(--color-ink);
+    }
+    .hh-btn:active:not(:disabled),
+    .hh-tile:active:not(:disabled),
+    .hh-mode:active:not(:disabled) {
+      translate: 2px 2px;
+      box-shadow: 1px 1px 0 var(--color-ink);
+    }
   }
 }
 
