@@ -621,10 +621,12 @@ function drawStyleMotif(
   W: number,
   u: number,
   cfg: StyleConfig,
+  cy: number = u * 232,
+  fx: number = 0.15,
 ): void {
-  const y = u * 232;
-  const lx = W * 0.15;
-  const rx = W * 0.85;
+  const y = cy;
+  const lx = W * fx;
+  const rx = W * (1 - fx);
   if (cfg.label === "Midnight") {
     ctx.fillStyle = CREAM;
     ctx.beginPath();
@@ -895,15 +897,24 @@ function teamCells(
 
 export function composeTeam(input: TeamComposeInput): void {
   const { ctx, w: W, h: H, members, teamName } = input;
+  const cfg = STYLE[input.style ?? "sunset"];
+  const bg =
+    cfg.label === "Midnight"
+      ? "#06231c"
+      : cfg.label === "Palm"
+        ? "#0c7a45"
+        : GREEN;
   const u = W / 1200;
   const m = W * 0.03;
 
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = GREEN;
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  // theme motif in the top corners (sun / crescent-moon+stars / palms)
+  drawStyleMotif(ctx, W, u * 1.4, cfg, H * 0.072, 0.1);
 
   // title
   const cx = W / 2;
@@ -951,7 +962,7 @@ export function composeTeam(input: TeamComposeInput): void {
   ctx.fillStyle = CREAM;
   ctx.font = `800 ${u * 46}px ${FONT.display()}`;
   ctx.fillText(truncate(teamName?.trim() || "THE CREW", 22), cx, H * 0.87);
-  ctx.fillStyle = SUN;
+  ctx.fillStyle = cfg.accent;
   ctx.font = `600 ${u * 26}px ${FONT.mono()}`;
   ctx.fillText(`#${SHARE.hashtag}`, cx, H * 0.91);
   ctx.fillStyle = "rgba(255,251,232,0.8)";
@@ -959,5 +970,5 @@ export function composeTeam(input: TeamComposeInput): void {
   ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H * 0.94);
 
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.045, W);
-  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.05, u, SUN);
+  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.05, u, cfg.accent);
 }

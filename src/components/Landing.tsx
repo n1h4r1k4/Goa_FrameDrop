@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import Generator from "./Generator";
 import SunsetSVG from "./scene/SunsetSVG";
+import SideDecor from "./scene/SideDecor";
 import { EVENT, WORDMARK, SHARE } from "@/lib/brand";
 
 gsap.registerPlugin(useGSAP);
@@ -81,6 +82,8 @@ export default function Landing() {
       ref={root}
       className="relative flex flex-1 flex-col items-center px-5 py-8 sm:py-10"
     >
+      <SideDecor />
+
       <p className="sub mb-4 font-mono text-[0.7rem] uppercase tracking-[0.3em] text-cream/70">
         {EVENT.location} · {EVENT.dates}
       </p>
@@ -91,7 +94,7 @@ export default function Landing() {
       >
         <span className="hk-line">{WORDMARK.line1}</span>
         <span
-          className="hk-line deva-sticker font-deva leading-none"
+          className="hk-line deva deva-sticker font-deva leading-none"
           style={{ fontSize: "0.6em" }}
         >
           {WORDMARK.deva}

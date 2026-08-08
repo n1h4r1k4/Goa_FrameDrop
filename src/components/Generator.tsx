@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { useGSAP } from "@gsap/react";
 import Uploader from "./Uploader";
 import FrameCanvas from "./FrameCanvas";
 import FrameControls from "./FrameControls";
@@ -45,18 +47,29 @@ const STYLE_DOT: Record<FrameStyle, string> = {
 };
 
 const tab_pill = (active: boolean) =>
-  `rounded-full px-4 py-2 font-mono text-xs uppercase tracking-widest transition-colors ${
+  `rounded-full px-4 py-2 font-mono text-xs uppercase tracking-widest transition-all active:scale-95 ${
     active
       ? "bg-sun-1 text-goa-green-deep"
       : "border border-cream/25 text-cream/75 hover:border-sun-1/70"
   }`;
 
 const chip = (active: boolean) =>
-  `rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-widest transition-colors ${
+  `rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-widest transition-all active:scale-95 ${
     active
       ? "bg-sun-1 text-goa-green-deep"
       : "border border-cream/25 text-cream/70 hover:border-sun-1/70"
   }`;
+
+// tiny press pop for the compact controls
+const pop = (el: EventTarget | null) => {
+  if (el instanceof HTMLElement) {
+    gsap.fromTo(
+      el,
+      { scale: 0.82 },
+      { scale: 1, duration: 0.4, ease: "back.out(3)" },
+    );
+  }
+};
 
 export default function Generator() {
   const [tab, setTab] = useState<Tab>("builderid");
@@ -107,6 +120,26 @@ export default function Generator() {
     setGenerated(false);
   }, []);
 
+  // GSAP reveal + stagger when the preview appears / template changes
+  const soloRef = useRef<HTMLDivElement>(null);
+  useGSAP(
+    () => {
+      if (!photo) return;
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.from(".reveal", {
+          y: 16,
+          autoAlpha: 0,
+          duration: 0.4,
+          ease: "power2.out",
+          stagger: 0.06,
+        });
+      });
+      return () => mm.revert();
+    },
+    { scope: soloRef, dependencies: [photo, shape] },
+  );
+
   return (
     <section className="mx-auto mt-8 w-full max-w-md">
       {/* primary nav */}
@@ -115,9 +148,10 @@ export default function Generator() {
           <button
             key={t.id}
             type="button"
-            onClick={() => {
+            onClick={(e) => {
               setTab(t.id);
               setGenerated(false);
+              pop(e.currentTarget);
             }}
             aria-pressed={tab === t.id}
             className={tab_pill(tab === t.id)}
@@ -134,38 +168,43 @@ export default function Generator() {
           <Uploader onPhoto={onPhoto} />
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-4">
-          {view === "edit" ? (
-            <FrameCanvas
-              photo={photo.bitmap}
-              photoSize={photo.size}
-              placement={placement}
-              identity={identity}
-              style={style}
-              shape={shape}
-              finalized={finalized}
-              onPlacementChange={setPlacement}
-            />
-          ) : (
-            <Card3DView
-              photo={photo}
-              placement={placement}
-              identity={identity}
-              style={style}
-              shape={shape}
-              finalized={finalized}
-            />
-          )}
+        <div ref={soloRef} className="flex flex-col items-center gap-4">
+          <div className="reveal flex w-full flex-col items-center">
+            {view === "edit" ? (
+              <FrameCanvas
+                photo={photo.bitmap}
+                photoSize={photo.size}
+                placement={placement}
+                identity={identity}
+                style={style}
+                shape={shape}
+                finalized={finalized}
+                onPlacementChange={setPlacement}
+              />
+            ) : (
+              <Card3DView
+                photo={photo}
+                placement={placement}
+                identity={identity}
+                style={style}
+                shape={shape}
+                finalized={finalized}
+              />
+            )}
+          </div>
 
           {/* one compact toolbar: template · theme · 2D/3D */}
-          <div className="flex w-full flex-wrap items-center justify-between gap-3">
+          <div className="reveal flex w-full flex-wrap items-center justify-between gap-3">
             {variants.length > 0 ? (
               <div className="flex gap-1.5">
                 {variants.map(([v, label]) => (
                   <button
                     key={v}
                     type="button"
-                    onClick={() => setVariant(v)}
+                    onClick={(e) => {
+                      setVariant(v);
+                      pop(e.currentTarget);
+                    }}
                     aria-pressed={currentVariant === v}
                     className={chip(currentVariant === v)}
                   >
@@ -183,7 +222,10 @@ export default function Generator() {
                   <button
                     key={s}
                     type="button"
-                    onClick={() => setStyle(s)}
+                    onClick={(e) => {
+                      setStyle(s);
+                      pop(e.currentTarget);
+                    }}
                     aria-pressed={s === style}
                     title={STYLE[s].label}
                     aria-label={`${STYLE[s].label} theme`}
@@ -228,36 +270,40 @@ export default function Generator() {
             </div>
           </div>
 
-          <FrameControls
-            scale={placement.scale}
-            onScale={(s) => setPlacement((p) => ({ ...p, scale: s }))}
-            onReset={() => setPlacement(DEFAULT_PLACEMENT)}
-            onChangePhoto={() => setPhoto(null)}
-            name={name}
-            handle={handle}
-            onName={setName}
-            onHandle={setHandle}
-            builderClass={identity.builderClass}
-          />
-
-          {needsGenerate && !generated ? (
-            <button
-              type="button"
-              onClick={() => setGenerated(true)}
-              className="w-full rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform active:scale-95"
-            >
-              Generate
-            </button>
-          ) : (
-            <ResultActions
-              photo={photo}
-              placement={placement}
-              identity={identity}
-              style={style}
-              shape={shape}
-              finalized={finalized}
+          <div className="reveal w-full">
+            <FrameControls
+              scale={placement.scale}
+              onScale={(s) => setPlacement((p) => ({ ...p, scale: s }))}
+              onReset={() => setPlacement(DEFAULT_PLACEMENT)}
+              onChangePhoto={() => setPhoto(null)}
+              name={name}
+              handle={handle}
+              onName={setName}
+              onHandle={setHandle}
+              builderClass={identity.builderClass}
             />
-          )}
+          </div>
+
+          <div className="reveal w-full">
+            {needsGenerate && !generated ? (
+              <button
+                type="button"
+                onClick={() => setGenerated(true)}
+                className="w-full rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform hover:-translate-y-0.5 active:scale-95"
+              >
+                Generate
+              </button>
+            ) : (
+              <ResultActions
+                photo={photo}
+                placement={placement}
+                identity={identity}
+                style={style}
+                shape={shape}
+                finalized={finalized}
+              />
+            )}
+          </div>
         </div>
       )}
     </section>

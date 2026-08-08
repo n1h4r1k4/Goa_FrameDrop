@@ -9,7 +9,8 @@ import { useEffect, useRef } from "react";
  * points held together by distance constraints under gravity. Grab the card and
  * fling it — the string sags, whips and swings back like an actual lanyard.
  * Flip (button or double-tap) turns the card around to reveal the QR.
- * Auto-fits any card aspect (portrait ticket, landscape banner, square).
+ * The card has softened (rounded) corners and its motion is low-pass smoothed so
+ * it feels weighty rather than jittery. Auto-fits any aspect.
  */
 export default function Card3D({
   front,
@@ -38,8 +39,8 @@ export default function Card3D({
     (async () => {
       const THREE = await import("three");
       if (cancelled || !mount) return;
-      const width = mount.clientWidth || 360;
-      const height = mount.clientHeight || 540;
+      const width = mount.clientWidth || 380;
+      const height = mount.clientHeight || 600;
 
       const scene = new THREE.Scene();
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -52,11 +53,11 @@ export default function Card3D({
       let cw: number;
       let ch: number;
       if (aspect >= 1) {
-        cw = 5;
-        ch = 5 / aspect;
+        cw = 5.4;
+        ch = 5.4 / aspect;
       } else {
-        ch = 4.8;
-        cw = 4.8 * aspect;
+        ch = 5.2;
+        cw = 5.2 * aspect;
       }
 
       // textures
@@ -74,14 +75,14 @@ export default function Card3D({
       const pivotY = 0;
       const clipMat = new THREE.MeshBasicMaterial({ color: PINK });
       const clip = new THREE.Mesh(
-        new THREE.TorusGeometry(0.16, 0.05, 14, 32),
+        new THREE.TorusGeometry(0.17, 0.05, 16, 40),
         clipMat,
       );
       clip.position.set(pivotX, pivotY, 0);
       scene.add(clip);
 
       // --- verlet rope (chain of points, gravity + distance constraints) ---
-      const ropeLen = Math.max(1.4, ch * 0.42);
+      const ropeLen = Math.max(1.15, ch * 0.34);
       const N = 18;
       const segLen = ropeLen / N;
       const pts: { x: number; y: number; ox: number; oy: number }[] = [];
@@ -90,62 +91,89 @@ export default function Card3D({
         pts.push({ x: pivotX, y, ox: pivotX, oy: y });
       }
 
-      const buildTube = () =>
-        new THREE.TubeGeometry(
-          new THREE.CatmullRomCurve3(
-            pts.map((p) => new THREE.Vector3(p.x, p.y, 0)),
-          ),
-          26,
-          0.045,
-          8,
-          false,
+      const buildTube = () => {
+        const curve = new THREE.CatmullRomCurve3(
+          pts.map((p) => new THREE.Vector3(p.x, p.y, 0)),
         );
+        curve.curveType = "centripetal"; // avoids overshoot -> smooth, stable tube
+        return new THREE.TubeGeometry(curve, 32, 0.05, 10, false);
+      };
       const ropeMat = new THREE.MeshBasicMaterial({ color: PINK });
       const ropeMesh = new THREE.Mesh(buildTube(), ropeMat);
       scene.add(ropeMesh);
 
       // small clip that grips the top of the card
       const grip = new THREE.Mesh(
-        new THREE.BoxGeometry(0.34, 0.14, 0.12),
+        new THREE.BoxGeometry(0.36, 0.15, 0.14),
         clipMat,
       );
       scene.add(grip);
 
-      // --- card: hang tilt on Z (parent), flip on Y (child) ---
+      // --- card with SOFTENED (rounded) corners ---
+      const R = Math.min(cw, ch) * 0.06;
+      const cardShape = new THREE.Shape();
+      {
+        const w = cw;
+        const h = ch;
+        const r = R;
+        const x0 = -w / 2;
+        const y0 = -h / 2;
+        cardShape.moveTo(x0 + r, y0);
+        cardShape.lineTo(x0 + w - r, y0);
+        cardShape.quadraticCurveTo(x0 + w, y0, x0 + w, y0 + r);
+        cardShape.lineTo(x0 + w, y0 + h - r);
+        cardShape.quadraticCurveTo(x0 + w, y0 + h, x0 + w - r, y0 + h);
+        cardShape.lineTo(x0 + r, y0 + h);
+        cardShape.quadraticCurveTo(x0, y0 + h, x0, y0 + h - r);
+        cardShape.lineTo(x0, y0 + r);
+        cardShape.quadraticCurveTo(x0, y0, x0 + r, y0);
+      }
+      const faceGeo = new THREE.ShapeGeometry(cardShape, 24);
+      {
+        // map the full texture across the rounded shape's bounding box
+        const pos = faceGeo.attributes.position;
+        const uvs = new Float32Array(pos.count * 2);
+        for (let i = 0; i < pos.count; i++) {
+          uvs[i * 2] = (pos.getX(i) + cw / 2) / cw;
+          uvs[i * 2 + 1] = (pos.getY(i) + ch / 2) / ch;
+        }
+        faceGeo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+      }
+      const depth = 0.05;
+      const bodyGeo = new THREE.ExtrudeGeometry(cardShape, {
+        depth,
+        bevelEnabled: false,
+        curveSegments: 24,
+      });
+
       const hang = new THREE.Group();
       const flip = new THREE.Group();
-      const geo = new THREE.PlaneGeometry(cw, ch);
-      const fMesh = new THREE.Mesh(
-        geo,
-        new THREE.MeshBasicMaterial({ map: frontTex }),
-      );
-      fMesh.position.z = 0.05;
-      const bMesh = new THREE.Mesh(
-        geo,
-        new THREE.MeshBasicMaterial({ map: backTex }),
-      );
+      const fMat = new THREE.MeshBasicMaterial({ map: frontTex });
+      const bMat = new THREE.MeshBasicMaterial({ map: backTex });
+      const bodyMat = new THREE.MeshBasicMaterial({ color: 0x0a2a18 });
+      const fMesh = new THREE.Mesh(faceGeo, fMat);
+      fMesh.position.z = depth / 2 + 0.002;
+      const bMesh = new THREE.Mesh(faceGeo, bMat);
       bMesh.rotation.y = Math.PI;
-      bMesh.position.z = -0.05;
-      const edge = new THREE.Mesh(
-        new THREE.BoxGeometry(cw, ch, 0.06),
-        new THREE.MeshBasicMaterial({ color: 0x0a2a18 }),
-      );
-      flip.add(edge, fMesh, bMesh);
+      bMesh.position.z = -(depth / 2 + 0.002);
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.z = -depth / 2;
+      flip.add(body, fMesh, bMesh);
       hang.add(flip);
       scene.add(hang);
 
       // --- camera fit (straight-down rest pose is the tallest case) ---
       const fov = 32;
       const camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, 100);
-      const top = pivotY + 0.16 + 0.12;
-      const bottom = pivotY - (ropeLen + ch) - 0.15;
+      const top = pivotY + 0.17 + 0.2;
+      const bottom = pivotY - (ropeLen + ch) - 0.12;
       const midY = (top + bottom) / 2;
       const totalH = top - bottom;
-      const totalW = cw + 2.4; // room to swing sideways
+      const totalW = cw + 1.3; // room to swing sideways
       const camAspect = width / height;
       const tan = Math.tan((fov * Math.PI) / 180 / 2);
       const dist =
-        Math.max(totalH / (2 * tan), totalW / (2 * tan * camAspect)) * 1.1;
+        Math.max(totalH / (2 * tan), totalW / (2 * tan * camAspect)) * 1.03;
       camera.position.set(0, midY, dist);
       camera.lookAt(0, midY, 0);
       // visible half-extents at z=0 — used to keep the card on-screen while dragging
@@ -170,7 +198,13 @@ export default function Card3D({
       const target = { x: 0, y: 0 };
       let phi = 0;
       let phiV = 0;
+      // low-pass smoothed card transform (kills jitter, adds weight)
+      let sx = pivotX;
+      let sy = pivotY - ropeLen - ch / 2;
+      let sang = 0;
 
+      const clamp = (v: number, lo: number, hi: number) =>
+        Math.max(lo, Math.min(hi, v));
       const onDown = (e: PointerEvent) => {
         const w = toWorld(e.clientX, e.clientY);
         const end = pts[N];
@@ -180,8 +214,6 @@ export default function Card3D({
         target.y = end.y;
         dragging = true;
       };
-      const clamp = (v: number, lo: number, hi: number) =>
-        Math.max(lo, Math.min(hi, v));
       const onMove = (e: PointerEvent) => {
         if (!dragging) return;
         const w = toWorld(e.clientX, e.clientY);
@@ -209,7 +241,7 @@ export default function Card3D({
 
       const step = () => {
         t += 1;
-        const breeze = dragging ? 0 : Math.sin(t * 0.018) * 0.001;
+        const breeze = dragging ? 0 : Math.sin(t * 0.012) * 0.0007;
 
         // integrate free points (verlet)
         for (let i = 1; i <= N; i++) {
@@ -267,7 +299,7 @@ export default function Card3D({
         ropeMesh.geometry.dispose();
         ropeMesh.geometry = buildTube();
 
-        // place the card at the rope end, tilted along the last segment
+        // target card transform from the rope end + last segment
         const end = pts[N];
         const prev = pts[N - 1];
         let dx = end.x - prev.x;
@@ -275,10 +307,20 @@ export default function Card3D({
         const len = Math.hypot(dx, dy) || 1e-6;
         dx /= len;
         dy /= len;
-        hang.position.set(end.x + dx * (ch / 2), end.y + dy * (ch / 2), 0);
-        hang.rotation.z = Math.atan2(dy, dx) + Math.PI / 2;
-        grip.position.set(end.x, end.y, 0.02);
-        grip.rotation.z = hang.rotation.z;
+        const tx = end.x + dx * (ch / 2);
+        const ty = end.y + dy * (ch / 2);
+        const ta = Math.atan2(dy, dx) + Math.PI / 2;
+        // low-pass smoothing (shortest-arc for the angle)
+        sx += (tx - sx) * 0.22;
+        sy += (ty - sy) * 0.22;
+        let da = ta - sang;
+        while (da > Math.PI) da -= Math.PI * 2;
+        while (da < -Math.PI) da += Math.PI * 2;
+        sang += da * 0.18;
+        hang.position.set(sx, sy, 0);
+        hang.rotation.z = sang;
+        grip.position.set(end.x, end.y, 0.04);
+        grip.rotation.z = sang;
 
         // flip spring
         const phiTarget = flippedRef.current ? Math.PI : 0;
@@ -310,11 +352,14 @@ export default function Card3D({
         dom.removeEventListener("dblclick", onDbl);
         frontTex.dispose();
         backTex.dispose();
-        geo.dispose();
+        faceGeo.dispose();
+        bodyGeo.dispose();
         ropeMesh.geometry.dispose();
         clip.geometry.dispose();
         grip.geometry.dispose();
-        edge.geometry.dispose();
+        fMat.dispose();
+        bMat.dispose();
+        bodyMat.dispose();
         ropeMat.dispose();
         clipMat.dispose();
         renderer.dispose();
@@ -332,7 +377,7 @@ export default function Card3D({
     <div
       ref={mountRef}
       data-card3d
-      className="h-[540px] w-full max-w-[420px] cursor-grab touch-none select-none active:cursor-grabbing"
+      className="h-[600px] w-full max-w-[480px] cursor-grab touch-none select-none active:cursor-grabbing"
     />
   );
 }
