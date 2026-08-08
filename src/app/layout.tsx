@@ -1,14 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Baloo_2, Victor_Mono } from "next/font/google";
+import { Baloo_2, Imbue, Victor_Mono } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { getSiteUrl } from "@/lib/siteUrl";
 
-// Display — comicy bold, covers Latin + Devanagari (गोवा)
+// Display — tall high-contrast poster serif for the wordmark + section titles
+// (variable font — omit `weight` so the full 100–900 range ships)
+const imbue = Imbue({
+  subsets: ["latin"],
+  variable: "--font-imbue",
+  display: "swap",
+});
+
+// Devanagari only — the गोवा sticker (Imbue has no Devanagari coverage)
 const baloo = Baloo_2({
   subsets: ["latin", "devanagari"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["600", "700", "800"],
   variable: "--font-baloo",
   display: "swap",
 });
@@ -72,7 +80,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${baloo.variable} ${victorMono.variable} h-full antialiased`}
+      className={`${imbue.variable} ${baloo.variable} ${victorMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <SiteHeader />

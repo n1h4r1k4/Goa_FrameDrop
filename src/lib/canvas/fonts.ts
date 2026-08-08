@@ -13,7 +13,7 @@ function cssVar(name: string, fallback: string): string {
 }
 
 export const FONT = {
-  display: () => cssVar("--font-baloo", "system-ui, sans-serif"),
+  display: () => cssVar("--font-imbue", "Georgia, serif"),
   mono: () => cssVar("--font-victor-mono", "ui-monospace, monospace"),
   deva: () => cssVar("--font-baloo", "system-ui, sans-serif"),
 };

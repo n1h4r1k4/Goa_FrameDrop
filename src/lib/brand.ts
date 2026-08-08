@@ -13,6 +13,11 @@ export const COLORS = {
   red: "#e2231a",
   pink: "#e6198a",
   white: "#ffffff",
+  /* poster layer — paper panels drawn with hard ink lines */
+  paper: "#f4edd8",
+  paper2: "#fdf8ea",
+  ink: "#0a1a10",
+  pinkHot: "#ff2d78",
 } as const;
 
 export const EVENT = {
