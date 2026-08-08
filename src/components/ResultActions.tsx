@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { renderToBlob, downloadBlob } from "@/lib/canvas/export";
 import { shareImageFile, canShareFiles } from "@/lib/share/webshare";
 import { tweetUrl } from "@/lib/share/intent";
+import { uploadFrame } from "@/lib/blob/client";
 import { SHARE } from "@/lib/brand";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Placement } from "@/lib/canvas/transform";
@@ -76,10 +77,19 @@ export default function ResultActions({ photo, placement, identity }: Props) {
         !dirtyRef.current && blobRef.current ? blobRef.current : await build();
       const res = await shareImageFile(blob, SHARE.defaultCaption);
       if (res === "unsupported") {
-        // desktop fallback (upgraded to a Blob-hosted OG link in task #6)
-        window.open(tweetUrl(), "_blank", "noopener,noreferrer");
-        downloadBlob(blob);
-        setNote("Opened X — your image was downloaded, attach it to the post.");
+        // Desktop / no file-share: upload to Blob and share a /s/[id] link whose
+        // OG image IS the generated graphic, so the X preview shows it.
+        try {
+          const { shareId } = await uploadFrame(blob);
+          const shareUrl = `${window.location.origin}/s/${shareId}`;
+          window.open(tweetUrl(shareUrl), "_blank", "noopener,noreferrer");
+          setNote("Opened X with a preview link — you can also Download the PNG.");
+        } catch {
+          // Blob not configured / offline: text intent + hand them the file.
+          window.open(tweetUrl(), "_blank", "noopener,noreferrer");
+          downloadBlob(blob);
+          setNote("Opened X — image downloaded so you can attach it to the post.");
+        }
       }
     } catch {
       setNote("Couldn't prepare the share — try Download instead.");
