@@ -4,7 +4,7 @@
  * (title top, meta bottom) or, for badges, in a cream name panel.
  * Same function drives preview and export. See frame-generator + hhgoa-brand skills.
  */
-import { COLORS, EVENT, SHARE } from "@/lib/brand";
+import { COLORS, EVENT, SHARE, WORDMARK } from "@/lib/brand";
 import { coverRectIn, type Placement, type PhotoSize } from "./transform";
 import { FONT } from "./fonts";
 import { STYLE, type FrameStyle, type StyleConfig } from "./styles";
@@ -865,7 +865,7 @@ function drawWordmark(
   const w1 = ctx.measureText("HACKER").width;
   const w3 = ctx.measureText("HOUSE").width;
   ctx.font = `800 ${size * 0.64}px ${deva}`;
-  const wd = ctx.measureText("गोवा").width;
+  const wd = ctx.measureText(WORDMARK.deva).width;
   const total = w1 + gap + wd + gap + w3;
   let x = cx - total / 2;
   ctx.textAlign = "left";
@@ -877,9 +877,9 @@ function drawWordmark(
   ctx.lineJoin = "round";
   ctx.strokeStyle = CREAM;
   ctx.lineWidth = size * 0.05;
-  ctx.strokeText("गोवा", x, baseY - size * 0.02);
+  ctx.strokeText(WORDMARK.deva, x, baseY - size * 0.02);
   ctx.fillStyle = PINK;
-  ctx.fillText("गोवा", x, baseY - size * 0.02);
+  ctx.fillText(WORDMARK.deva, x, baseY - size * 0.02);
   x += wd + gap;
   ctx.fillStyle = accent;
   ctx.font = `800 ${size}px ${disp}`;

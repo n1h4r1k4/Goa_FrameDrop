@@ -14,7 +14,7 @@ const imbue = Imbue({
   display: "swap",
 });
 
-// Devanagari only — the गोवा sticker (Imbue has no Devanagari coverage)
+// Devanagari only — the गोंवा sticker (Imbue has no Devanagari coverage)
 const baloo = Baloo_2({
   subsets: ["latin", "devanagari"],
   weight: ["600", "700", "800"],

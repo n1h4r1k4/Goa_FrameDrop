@@ -49,6 +49,10 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* The illustration's own palms are baked into the PNG, so the whole scene
+     sways instead: pivoting on the sand means the ground barely moves while the
+     canopies at the top travel a few pixels — a breeze, not a wobble. Scaled up
+     slightly so the rotation never exposes a corner. */
   body::before {
     content: "";
     position: fixed;
@@ -62,7 +66,13 @@
         rgba(4, 10, 8, 0.78) 100%
       ),
       url("/bg/night-beach.png") center / cover no-repeat;
-    background-attachment: scroll, fixed;
+    transform-origin: 50% 100%;
+    transform: scale(1.05);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    body::before {
+      animation: hh-breeze 14s ease-in-out infinite alternate;
+    }
   }
 
   ::selection {
@@ -273,7 +283,7 @@
     cursor: pointer;
   }
 
-  /* sticker-style गोवा wordmark: pink fill, cream outline, ink depth */
+  /* sticker-style गोंवा wordmark: pink fill, cream outline, ink depth */
   .deva-sticker {
     color: var(--color-pink-hot);
     -webkit-text-stroke: 0.055em var(--color-cream);
@@ -331,6 +341,15 @@
       translate: 2px 2px;
       box-shadow: 1px 1px 0 var(--color-ink);
     }
+  }
+}
+
+@keyframes hh-breeze {
+  from {
+    transform: scale(1.05) rotate(-0.32deg);
+  }
+  to {
+    transform: scale(1.05) rotate(0.32deg);
   }
 }
 
