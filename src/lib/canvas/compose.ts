@@ -10,6 +10,7 @@ import { FONT } from "./fonts";
 import { STYLE, type FrameStyle, type StyleConfig } from "./styles";
 import { SHAPE, type FrameShape } from "./shapes";
 import { makeQR, metadataText, type QRMatrix } from "@/lib/qr";
+import { passSerial } from "@/lib/badge";
 
 const PINK = COLORS.pink;
 const CREAM = COLORS.cream;
@@ -514,7 +515,7 @@ function composeBadge(
     }
   }
 
-  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.055, u, cfg.accent);
+  drawStamp(ctx, W - m - W * 0.04 - u * 150, m + W * 0.055, u, cfg.accent);
 }
 
 // ---------- ticket / boarding-pass ID ----------
@@ -603,6 +604,35 @@ function drawLanyard(
   ctx.lineWidth = Math.max(1, u * 3);
   ctx.strokeStyle = "rgba(10,42,24,0.55)";
   ctx.stroke();
+}
+
+/**
+ * Decorative barcode band. Bar widths are seeded off the serial, so a given pass
+ * always draws the same barcode — it just doesn't encode anything (the QR does).
+ */
+function drawBarcode(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  seed: string,
+  color: string,
+): void {
+  let s = 0;
+  for (const ch of seed) s = ((s << 5) - s + ch.charCodeAt(0)) | 0;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) | 0;
+    return Math.abs(s % 1000) / 1000;
+  };
+  ctx.fillStyle = color;
+  const unit = w / 100;
+  let cx = x;
+  while (cx < x + w) {
+    const bar = (0.5 + rand() * 1.8) * unit;
+    if (rand() > 0.3) ctx.fillRect(cx, y, Math.max(1, Math.min(bar, x + w - cx)), h);
+    cx += bar + (0.5 + rand() * 1.3) * unit;
+  }
 }
 
 function drawQRPlaceholder(
@@ -773,35 +803,73 @@ function composeTicket(
     p.y + p.h * 0.82,
   );
 
-  // QR (centered) — gated behind Generate
-  const qbox = u * 250;
-  const qx = cx - qbox / 2;
-  const qy = u * 1088;
-  if (finalized) {
-    drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity)));
-    ctx.fillStyle = "rgba(255,251,232,0.8)";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
-    ctx.fillText("SCAN FOR DETAILS", cx, qy + qbox + u * 30);
-  } else {
-    drawQRPlaceholder(ctx, qx, qy, qbox, u);
-  }
+  // stub: the QR lives on the BACK of the pass, so the front carries the
+  // paper-ticket furniture instead — perforation, serial, barcode
+  const perfY = u * 1096;
+  ctx.save();
+  ctx.setLineDash([u * 14, u * 12]);
+  ctx.lineWidth = Math.max(1, u * 3);
+  ctx.strokeStyle = "rgba(255,251,232,0.35)";
+  ctx.beginPath();
+  ctx.moveTo(m + u * 40, perfY);
+  ctx.lineTo(W - m - u * 40, perfY);
+  ctx.stroke();
+  ctx.restore();
 
-  // footer
+  const serial = passSerial(identity?.name || identity?.handle || "");
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,251,232,0.55)";
+  ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
+  ctx.fillText("SERIAL", m + u * 46, perfY + u * 62);
+  ctx.fillStyle = cfg.accent;
+  ctx.font = `700 ${u * 26}px ${FONT.mono()}`;
+  ctx.fillText(serial, m + u * 46, perfY + u * 96);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = "rgba(255,251,232,0.55)";
+  ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
+  ctx.fillText("EDITION", W - m - u * 46, perfY + u * 62);
+  ctx.fillStyle = cfg.accent;
+  ctx.font = `700 ${u * 26}px ${FONT.mono()}`;
+  ctx.fillText("5TH · GOA", W - m - u * 46, perfY + u * 96);
+
+  drawBarcode(
+    ctx,
+    m + u * 46,
+    perfY + u * 132,
+    W - m * 2 - u * 92,
+    u * 60,
+    serial,
+    "rgba(255,251,232,0.85)",
+  );
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = PINK;
+  ctx.font = `600 ${u * 20}px ${FONT.mono()}`;
+  ctx.fillText(
+    finalized ? "QR ON THE BACK — FLIP THE PASS" : "TAP GENERATE TO ISSUE THIS PASS",
+    cx,
+    perfY + u * 236,
+  );
+
+  // footer — clear of the inner pink rule, which sits W*0.022 in from the edge
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "rgba(255,251,232,0.8)";
   ctx.font = `500 ${u * 20}px ${FONT.mono()}`;
-  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H - m - u * 54);
+  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H - m - u * 82);
   ctx.fillStyle = cfg.accent;
   ctx.font = `700 ${u * 22}px ${FONT.mono()}`;
-  ctx.fillText("2:47 PM STUDIO", cx, H - m - u * 22);
+  ctx.fillText("2:47 PM STUDIO", cx, H - m - u * 48);
 
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.045, W);
 }
 
-/** The back of the card: big scannable QR + the builder's details. */
+/**
+ * The back of the card: big scannable QR + the holder's details. Shared by the
+ * 2D flip, the 3D card and the export, and reused for the crew pass via `label`.
+ */
 export function composeCardBack(
   ctx: CanvasRenderingContext2D,
   W: number,
@@ -809,6 +877,7 @@ export function composeCardBack(
   identity: Identity | undefined,
   style: FrameStyle = "sunset",
   finalized = true,
+  label = "BUILDER PASS",
 ): void {
   const cfg = STYLE[style];
   const S = Math.min(W, H);
@@ -828,36 +897,52 @@ export function composeCardBack(
   ctx.textAlign = "center";
   ctx.fillStyle = PINK;
   ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-  ctx.fillText("BUILDER PASS", cx, m + u * 120);
+  ctx.fillText(label, cx, m + u * 120);
 
-  const qbox = Math.min(W * 0.62, H * 0.42);
+  // The back is drawn at whatever aspect the front is — a 2:3 ticket or a square
+  // crew card — so the text block is stacked UP from the footer and the QR takes
+  // whatever room is left. Offsetting down from the QR only worked on tall cards.
+  const studioY = H - m - u * 48;
+  const datesY = H - m - u * 82;
+  const serialY = datesY - u * 50;
+  const classY = serialY - u * 38;
+  const nameY = classY - (identity?.builderClass ? u * 48 : u * 10);
+  const scanY = nameY - u * 48;
+
+  const qTop = m + u * 180;
+  const qbox = Math.max(u * 120, Math.min(W * 0.62, scanY - u * 30 - qTop));
   const qx = cx - qbox / 2;
-  const qy = H * 0.3;
+  const qy = qTop + Math.max(0, (scanY - u * 30 - qTop - qbox) / 2);
   if (finalized) {
-    drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity)));
+    drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity, label)));
     ctx.fillStyle = CREAM;
     ctx.textAlign = "center";
     ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-    ctx.fillText("SCAN FOR DETAILS", cx, qy + qbox + u * 46);
+    ctx.fillText("SCAN FOR DETAILS", cx, scanY);
   } else {
     drawQRPlaceholder(ctx, qx, qy, qbox, u);
   }
 
+  ctx.textAlign = "center";
   ctx.fillStyle = cfg.accent;
   ctx.font = `800 ${u * 54}px ${FONT.display()}`;
-  ctx.fillText(truncate(identity?.name || "BUILDER", 18), cx, qy + qbox + u * 116);
+  ctx.fillText(truncate(identity?.name || "BUILDER", 18), cx, nameY);
   if (identity?.builderClass) {
     ctx.fillStyle = PINK;
     ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-    ctx.fillText(`// ${identity.builderClass.toUpperCase()}`, cx, qy + qbox + u * 156);
+    ctx.fillText(truncate(`// ${identity.builderClass.toUpperCase()}`, 34), cx, classY);
   }
+  // same serial as the front, so the two sides read as one pass
+  ctx.fillStyle = "rgba(255,251,232,0.55)";
+  ctx.font = `600 ${u * 20}px ${FONT.mono()}`;
+  ctx.fillText(passSerial(identity?.name || identity?.handle || ""), cx, serialY);
 
   ctx.fillStyle = "rgba(255,251,232,0.8)";
   ctx.font = `500 ${u * 20}px ${FONT.mono()}`;
-  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H - m - u * 54);
+  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, datesY);
   ctx.fillStyle = cfg.accent;
   ctx.font = `700 ${u * 22}px ${FONT.mono()}`;
-  ctx.fillText(`2:47 PM STUDIO · #${SHARE.hashtag}`, cx, H - m - u * 22);
+  ctx.fillText(`2:47 PM STUDIO · #${SHARE.hashtag}`, cx, studioY);
 
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, S * 0.05, S);
 }
@@ -1017,5 +1102,5 @@ export function composeTeam(input: TeamComposeInput): void {
   ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H * 0.94);
 
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.045, W);
-  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.05, u, cfg.accent);
+  drawStamp(ctx, W - m - W * 0.04 - u * 150, m + W * 0.05, u, cfg.accent);
 }

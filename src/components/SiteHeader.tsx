@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { EVENT, LINKS } from "@/lib/brand";
+import { LINKS } from "@/lib/brand";
 
 export default function SiteHeader() {
   return (
@@ -20,11 +20,6 @@ export default function SiteHeader() {
           className="h-9 w-auto"
         />
       </a>
-
-      {/* centre stamp — edition lineage, the thing that makes this the 5th one */}
-      <span className="hidden rounded-full border-2 border-sun-1 px-4 py-1.5 font-mono text-[0.68rem] font-bold uppercase tracking-[0.18em] text-sun-1 md:inline-block">
-        {EVENT.editionLabel}
-      </span>
 
       <nav className="flex shrink-0 items-center gap-2">
         <a

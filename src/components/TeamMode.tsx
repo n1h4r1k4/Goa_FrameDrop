@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import {
@@ -9,8 +9,12 @@ import {
   ACCEPT,
   type DecodedPhoto,
 } from "@/lib/heic/decode";
-import { composeTeam } from "@/lib/canvas/compose";
-import { renderTeamToBlob, downloadBlob } from "@/lib/canvas/export";
+import { composeTeam, composeCardBack } from "@/lib/canvas/compose";
+import {
+  renderTeamToBlob,
+  renderCardBackToBlob,
+  downloadBlob,
+} from "@/lib/canvas/export";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
 import { shareImageFile } from "@/lib/share/webshare";
 import { tweetUrl } from "@/lib/share/intent";
@@ -19,7 +23,13 @@ import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
 import { SHARE } from "@/lib/brand";
 import CameraCapture from "./CameraCapture";
 import { Panel, PanelHead, SectionTitle, Tape } from "./ui/Panel";
-import { CrewIcon, DownloadIcon, ShareIcon, UploadIcon } from "./icons";
+import {
+  CrewIcon,
+  DownloadIcon,
+  FlipIcon,
+  ShareIcon,
+  UploadIcon,
+} from "./icons";
 
 const MAX = 4;
 const PREVIEW = 360;
@@ -90,11 +100,30 @@ export default function TeamMode() {
   const [style, setStyle] = useState<FrameStyle>("sunset");
   const [busy, setBusy] = useState<null | "add" | "download" | "share">(null);
   const [note, setNote] = useState<string | null>(null);
+  const [flipped, setFlipped] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const backRef = useRef<HTMLCanvasElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const [names, setNames] = useState("");
+
+  // the crew reuses the builder card back: crew name where the name goes, the
+  // roster where the builder class goes
+  const crewIdentity = useMemo(() => {
+    const roster = names
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return {
+      name: teamName.trim() || "CREW",
+      builderClass: roster.length
+        ? roster.join(" · ")
+        : `${photos.length} builder${photos.length === 1 ? "" : "s"}`,
+    };
+  }, [teamName, names, photos.length]);
+
   const members = useCallback(() => {
     const list = names.split(",").map((s) => s.trim());
     return photos.map((p, i) => ({
@@ -143,6 +172,23 @@ export default function TeamMode() {
     );
   }, [photos, style, teamName, names, members]);
 
+  // the QR side
+  useEffect(() => {
+    const canvas = backRef.current;
+    if (!canvas || !photos.length) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const side = Math.round(PREVIEW * dpr);
+    if (canvas.width !== side) {
+      canvas.width = side;
+      canvas.height = side;
+    }
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ensureFontsLoaded().then(() =>
+      composeCardBack(ctx, side, side, crewIdentity, style, true, "CREW PASS"),
+    );
+  }, [photos.length, style, crewIdentity]);
+
   // GSAP reveal + stagger whenever the crew preview appears / mode flips
   const hasPhotos = photos.length > 0;
   useGSAP(
@@ -171,13 +217,35 @@ export default function TeamMode() {
     { scope: rootRef, dependencies: [hasPhotos, mode] },
   );
 
-  const build = () => renderTeamToBlob({ members: members(), style, teamName });
+  // the flip drives the whole card: preview, download and share
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    gsap.to(card, {
+      rotateY: flipped ? 180 : 0,
+      duration: reduce ? 0 : 0.85,
+      ease: "power3.inOut",
+    });
+  }, [flipped, hasPhotos]);
+
+  const fileName = `hh-goa-team${flipped ? "-back" : ""}.png`;
+  const build = () =>
+    flipped
+      ? renderCardBackToBlob({
+          w: 1200,
+          h: 1200,
+          identity: crewIdentity,
+          style,
+          label: "CREW PASS",
+        })
+      : renderTeamToBlob({ members: members(), style, teamName });
 
   const onDownload = async () => {
     setBusy("download");
     setNote(null);
     try {
-      downloadBlob(await build(), "hh-goa-team.png");
+      downloadBlob(await build(), fileName);
       if (canvasRef.current)
         gsap.fromTo(
           canvasRef.current,
@@ -196,7 +264,7 @@ export default function TeamMode() {
     setNote(null);
     try {
       const blob = await build();
-      const res = await shareImageFile(blob, CAPTION, "hh-goa-team.png");
+      const res = await shareImageFile(blob, CAPTION, fileName);
       if (res === "unsupported") {
         try {
           const { shareId } = await uploadFrame(blob);
@@ -208,7 +276,7 @@ export default function TeamMode() {
           setNote("Opened X with a preview link.");
         } catch {
           window.open(tweetUrl(undefined, CAPTION), "_blank", "noopener,noreferrer");
-          downloadBlob(blob, "hh-goa-team.png");
+          downloadBlob(blob, fileName);
           setNote("Opened X. Image downloaded so you can attach it.");
         }
       }
@@ -337,7 +405,7 @@ export default function TeamMode() {
               <input
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
-                placeholder="BinaryEXE"
+                placeholder="Codeville"
                 maxLength={22}
                 className="hh-input"
               />
@@ -350,7 +418,7 @@ export default function TeamMode() {
                 <input
                   value={names}
                   onChange={(e) => setNames(e.target.value)}
-                  placeholder="Krishna, Aisha, Dev"
+                  placeholder="Rishabh, Niharika"
                   className="hh-input"
                 />
                 <span className="mt-1.5 block font-mono text-[0.66rem] text-ink/50">
@@ -404,11 +472,43 @@ export default function TeamMode() {
               </span>
             </div>
           ) : (
-            <canvas
-              ref={canvasRef}
-              aria-label="Team frame preview"
-              className="crew-reveal canvas-surface aspect-square w-full max-w-[360px] rounded-xl border-[3px] border-ink shadow-[6px_6px_0_var(--color-ink)]"
-            />
+            <>
+              <div
+                className="crew-reveal w-full max-w-[360px]"
+                style={{ perspective: 1800 }}
+              >
+                <div
+                  ref={cardRef}
+                  className="relative aspect-square w-full"
+                  style={{ transformStyle: "preserve-3d" }}
+                >
+                  <canvas
+                    ref={canvasRef}
+                    aria-label="Crew pass preview"
+                    className="canvas-surface absolute inset-0 h-full w-full rounded-xl border-[3px] border-ink shadow-[6px_6px_0_var(--color-ink)]"
+                    style={{ backfaceVisibility: "hidden" }}
+                  />
+                  <canvas
+                    ref={backRef}
+                    aria-label="The back of your crew pass — scannable QR"
+                    aria-hidden={!flipped}
+                    className="canvas-surface absolute inset-0 h-full w-full rounded-xl border-[3px] border-ink shadow-[6px_6px_0_var(--color-ink)]"
+                    style={{
+                      backfaceVisibility: "hidden",
+                      transform: "rotateY(180deg)",
+                    }}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFlipped((f) => !f)}
+                className="crew-reveal hh-btn hh-btn-paper"
+              >
+                <FlipIcon className="h-4 w-4" />
+                {flipped ? "Show the front" : "Flip to the QR"}
+              </button>
+            </>
           )}
 
           <div className="crew-reveal flex w-full flex-col gap-3">

@@ -16,9 +16,9 @@ export function makeQR(text: string): QRMatrix {
 }
 
 /** Human-readable details encoded into the QR. */
-export function metadataText(identity?: Identity): string {
+export function metadataText(identity?: Identity, label = "BUILDER PASS"): string {
   return [
-    "HACKER HOUSE GOA 2026 · BUILDER PASS",
+    `HACKER HOUSE GOA 2026 · ${label}`,
     identity?.name ? `Name: ${identity.name}` : null,
     identity?.handle ? `X: @${identity.handle.replace(/^@/, "")}` : null,
     identity?.builderClass ? `Class: ${identity.builderClass}` : null,

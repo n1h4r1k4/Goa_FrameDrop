@@ -19,10 +19,19 @@ const CLASSES = [
   "Beachhead Builder",
 ] as const;
 
+function hash(seed: string): number {
+  let h = 0;
+  for (const ch of seed) h = ((h << 5) - h + ch.charCodeAt(0)) | 0;
+  return Math.abs(h);
+}
+
 export function builderClass(seed: string): string {
   const s = seed.trim();
   if (!s) return "";
-  let h = 0;
-  for (const ch of s) h = ((h << 5) - h + ch.charCodeAt(0)) | 0;
-  return CLASSES[Math.abs(h) % CLASSES.length];
+  return CLASSES[hash(s) % CLASSES.length];
+}
+
+/** Deterministic pass serial — the same builder always gets the same number. */
+export function passSerial(seed: string): string {
+  return `HHG-2026-${String(hash(seed.trim() || "HHG") % 10000).padStart(4, "0")}`;
 }

@@ -21,6 +21,8 @@ type Props = {
   shape: FrameShape;
   overlay?: OverlaySpec;
   finalized?: boolean;
+  /** the preview is flipped — download/share the QR side instead */
+  back?: boolean;
 };
 
 export default function ResultActions({
@@ -31,8 +33,10 @@ export default function ResultActions({
   shape,
   overlay,
   finalized = true,
+  back = false,
 }: Props) {
-  const fileName = overlay ? "hh-goa-frame.png" : `${SHAPE[shape].fileName}.png`;
+  const stem = overlay ? "hh-goa-frame" : SHAPE[shape].fileName;
+  const fileName = `${stem}${back ? "-back" : ""}.png`;
   const [busy, setBusy] = useState<null | "download" | "share">(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -50,6 +54,7 @@ export default function ResultActions({
       shape,
       overlay,
       finalized,
+      back,
     });
     blobRef.current = blob;
     dirtyRef.current = false;
@@ -76,6 +81,7 @@ export default function ResultActions({
     shape,
     overlay,
     finalized,
+    back,
   ]);
 
   const onDownload = async () => {

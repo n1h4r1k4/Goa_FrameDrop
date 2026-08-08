@@ -15,6 +15,7 @@ import {
   CameraIcon,
   CircleFrameIcon,
   CrewIcon,
+  FlipIcon,
   TicketIcon,
 } from "./icons";
 import { DEFAULT_PLACEMENT, type Placement } from "@/lib/canvas/transform";
@@ -85,6 +86,7 @@ export default function Generator() {
   const [nameTouched, setNameTouched] = useState(false);
   const [handle, setHandle] = useState("");
   const [view, setView] = useState<"edit" | "3d">("edit");
+  const [flipped, setFlipped] = useState(false);
   const [generated, setGenerated] = useState(false);
 
   const shape: FrameShape =
@@ -144,6 +146,10 @@ export default function Generator() {
   );
 
   const cfg = SHAPE[shape];
+  // only pass-shaped outputs have a back worth showing; a PFP or a banner is an
+  // image, not a card
+  const twoSided = cfg.mode === "ticket" || cfg.mode === "badge";
+  const showingBack = twoSided && flipped;
 
   return (
     <section id="generator" className="scroll-mt-4 px-4 py-10 sm:px-6 sm:py-14">
@@ -348,6 +354,7 @@ export default function Generator() {
                       style={style}
                       shape={shape}
                       finalized={finalized}
+                      flipped={showingBack}
                       onPlacementChange={setPlacement}
                     />
                   ) : (
@@ -362,9 +369,22 @@ export default function Generator() {
                   )}
                 </div>
 
+                {photo && view === "edit" && twoSided && (
+                  <button
+                    type="button"
+                    onClick={() => setFlipped((f) => !f)}
+                    className="reveal hh-btn hh-btn-paper"
+                  >
+                    <FlipIcon className="h-4 w-4" />
+                    {flipped ? "Show the front" : "Flip to the QR"}
+                  </button>
+                )}
+
                 {photo && view === "edit" && (
                   <p className="reveal font-mono text-[0.66rem] uppercase tracking-[0.14em] text-ink/45">
-                    Drag to reposition · scroll or pinch to zoom
+                    {showingBack
+                      ? "The QR carries your pass details"
+                      : "Drag to reposition · scroll or pinch to zoom"}
                   </p>
                 )}
 
@@ -393,6 +413,7 @@ export default function Generator() {
                       style={style}
                       shape={shape}
                       finalized={finalized}
+                      back={showingBack}
                     />
                   )}
                 </div>

@@ -5,12 +5,15 @@
 import { MAX_CANVAS_AREA, MAX_CANVAS_SIDE, TARGET_DPR } from "./constants";
 import {
   compose,
+  composeCardBack,
   composeTeam,
   type ComposeInput,
+  type Identity,
   type TeamComposeInput,
 } from "./compose";
 import { ensureFontsLoaded } from "./fonts";
 import { SHAPE } from "./shapes";
+import type { FrameStyle } from "./styles";
 
 /** Largest safe multiplier for a w×h canvas (>=1, <=TARGET_DPR). */
 export function exportScale(w: number, h: number): number {
@@ -19,7 +22,12 @@ export function exportScale(w: number, h: number): number {
   return Math.max(1, Math.min(TARGET_DPR, byArea, bySide));
 }
 
-export type RenderInput = Omit<ComposeInput, "ctx" | "w" | "h">;
+export type RenderInput = Omit<ComposeInput, "ctx" | "w" | "h"> & {
+  /** export the QR side instead of the photo side */
+  back?: boolean;
+  /** wording on the card back ("BUILDER PASS" / "CREW PASS") */
+  backLabel?: string;
+};
 
 /** Render the composed graphic to a PNG Blob at retina resolution. */
 export async function renderToBlob(input: RenderInput): Promise<Blob> {
@@ -43,7 +51,19 @@ export async function renderToBlob(input: RenderInput): Promise<Blob> {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable.");
 
-  compose({ ...input, ctx, w, h });
+  if (input.back) {
+    composeCardBack(
+      ctx,
+      w,
+      h,
+      input.identity,
+      input.style,
+      input.finalized ?? true,
+      input.backLabel,
+    );
+  } else {
+    compose({ ...input, ctx, w, h });
+  }
 
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/png"),
@@ -80,6 +100,41 @@ export async function renderToCanvas(
   if (!ctx) throw new Error("Canvas 2D context unavailable.");
   compose({ ...input, ctx, w, h });
   return canvas;
+}
+
+/** Render just a card back (crew pass, or any card whose front isn't a photo). */
+export async function renderCardBackToBlob(input: {
+  w: number;
+  h: number;
+  identity?: Identity;
+  style?: FrameStyle;
+  finalized?: boolean;
+  label?: string;
+}): Promise<Blob> {
+  const scale = exportScale(input.w, input.h);
+  await ensureFontsLoaded();
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(input.w * scale);
+  canvas.height = Math.round(input.h * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable.");
+
+  composeCardBack(
+    ctx,
+    canvas.width,
+    canvas.height,
+    input.identity,
+    input.style,
+    input.finalized ?? true,
+    input.label,
+  );
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/png"),
+  );
+  if (!blob) throw new Error("Export failed — the image may be too large.");
+  return blob;
 }
 
 export type RenderTeamInput = Omit<TeamComposeInput, "ctx" | "w" | "h"> & {
