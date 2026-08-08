@@ -49,9 +49,9 @@ export const SHARE = {
     "Locked in for HH Goa 2026. Building on the sand, 28–31 Oct. #FrameInGoa",
 } as const;
 
-/** Bilingual wordmark: English + गोंवा (Devanagari), spelled as on hhgoa.com. */
+/** Bilingual wordmark: English + गोवा (Devanagari) — no anusvara. */
 export const WORDMARK = {
   line1: "HACKER",
   line2: "HOUSE",
-  deva: "गोंवा",
+  deva: "गोवा",
 } as const;

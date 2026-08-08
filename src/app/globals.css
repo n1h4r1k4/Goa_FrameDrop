@@ -283,7 +283,7 @@
     cursor: pointer;
   }
 
-  /* sticker-style गोंवा wordmark: pink fill, cream outline, ink depth */
+  /* sticker-style गोवा wordmark: pink fill, cream outline, ink depth */
   .deva-sticker {
     color: var(--color-pink-hot);
     -webkit-text-stroke: 0.055em var(--color-cream);
