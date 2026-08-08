@@ -3,6 +3,7 @@ import { Baloo_2, Imbue, Victor_Mono } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import Starfield from "@/components/scene/Starfield";
 import { getSiteUrl } from "@/lib/siteUrl";
 
 // Display — tall high-contrast poster serif for the wordmark + section titles
@@ -71,7 +72,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b6839",
+  themeColor: "#060d0a",
   width: "device-width",
   initialScale: 1,
 };
@@ -83,6 +84,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${imbue.variable} ${baloo.variable} ${victorMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <Starfield />
         <SiteHeader />
         {children}
         <SiteFooter />

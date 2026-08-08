@@ -75,11 +75,7 @@ export function compose(input: ComposeInput): void {
 
   // themed base background so every shape (not just the ticket) reflects the style
   const baseBg =
-    cfg.label === "Midnight"
-      ? "#06231c"
-      : cfg.label === "Palm"
-        ? "#0c7a45"
-        : GREEN;
+    cfg.bg;
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = baseBg;
   ctx.fillRect(0, 0, w, h);
@@ -178,7 +174,7 @@ function subline(identity?: Identity): string {
 
 const stackLabel = (identity?: Identity) => {
   const s = identity?.stack?.trim();
-  return s ? `STACK: ${s.toUpperCase()}` : "";
+  return s ? `PRIMARY TECH STACK: ${s.toUpperCase()}` : "";
 };
 
 /** Set ctx.font at `size`, shrunk just enough that `text` fits `maxW`. */
@@ -280,6 +276,111 @@ function drawHalftone(
       ctx.fill();
     }
   }
+  ctx.restore();
+}
+
+/**
+ * Translucent beach scene washed across the whole card, behind everything else:
+ * horizon, a low sun/moon glow, palms leaning in from both edges, a villa and a
+ * couple of boats. Drawn at low alpha so it reads as watermark, not clutter.
+ */
+function drawSceneBackdrop(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  u: number,
+  cfg: StyleConfig,
+): void {
+  ctx.save();
+  roundRectPath(ctx, x, y, w, h, u * 40);
+  ctx.clip();
+  ctx.globalAlpha = 0.22;
+
+  const horizon = y + h * 0.62;
+
+  // sky glow over the horizon
+  const glow = ctx.createRadialGradient(
+    x + w * 0.5,
+    horizon,
+    0,
+    x + w * 0.5,
+    horizon,
+    w * 0.62,
+  );
+  glow.addColorStop(0, cfg.glow);
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(x, y, w, h);
+
+  // horizon + sea ripples
+  ctx.strokeStyle = cfg.horizon;
+  ctx.lineWidth = Math.max(1, u * 3);
+  ctx.beginPath();
+  ctx.moveTo(x, horizon);
+  ctx.lineTo(x + w, horizon);
+  ctx.stroke();
+  ctx.lineWidth = Math.max(1, u * 2);
+  for (let i = 1; i <= 5; i++) {
+    const ry = horizon + i * u * 22;
+    const rw = w * (0.5 - i * 0.06);
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2 - rw / 2, ry);
+    ctx.lineTo(x + w / 2 + rw / 2, ry);
+    ctx.stroke();
+  }
+
+  // headland silhouettes
+  ctx.fillStyle = cfg.sceneInk;
+  ctx.globalAlpha = 0.14;
+  ctx.beginPath();
+  ctx.moveTo(x, horizon);
+  ctx.quadraticCurveTo(x + w * 0.16, horizon - h * 0.1, x + w * 0.34, horizon);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.68, horizon);
+  ctx.quadraticCurveTo(x + w * 0.85, horizon - h * 0.09, x + w, horizon);
+  ctx.closePath();
+  ctx.fill();
+
+  // palms leaning in from both edges
+  ctx.globalAlpha = 0.3;
+  const ph = h * 0.34 * cfg.palmScale;
+  palm(ctx, x + w * 0.1, y + h * 0.9, ph, false, cfg.sceneInk);
+  palm(ctx, x + w * 0.9, y + h * 0.94, ph * 0.86, true, cfg.sceneInk);
+  palm(ctx, x + w * 0.24, y + h * 0.97, ph * 0.6, false, cfg.sceneInk);
+
+  // a villa on the right and two boats out at sea
+  ctx.globalAlpha = 0.26;
+  ctx.strokeStyle = cfg.sceneInk;
+  ctx.lineWidth = Math.max(1, u * 3);
+  const vx = x + w * 0.7;
+  const vy = y + h * 0.86;
+  const vw = w * 0.15;
+  const vh = h * 0.1;
+  ctx.beginPath();
+  ctx.rect(vx, vy - vh, vw, vh);
+  ctx.moveTo(vx - vw * 0.14, vy - vh);
+  ctx.lineTo(vx + vw / 2, vy - vh * 1.7);
+  ctx.lineTo(vx + vw * 1.14, vy - vh);
+  ctx.stroke();
+
+  for (const [bx, by, bs] of [
+    [x + w * 0.24, horizon - u * 10, u * 34],
+    [x + w * 0.62, horizon - u * 6, u * 24],
+  ]) {
+    ctx.beginPath();
+    ctx.moveTo(bx - bs / 2, by);
+    ctx.quadraticCurveTo(bx, by + bs * 0.34, bx + bs / 2, by);
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx, by - bs * 0.7);
+    ctx.lineTo(bx + bs * 0.44, by - bs * 0.22);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
   ctx.restore();
 }
 
@@ -653,6 +754,7 @@ function composeBadge(
   const cx = W / 2;
 
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawSceneBackdrop(ctx, m, m, W - m * 2, H - m * 2, u, cfg);
   drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.05, W);
   drawCornerTicks(
@@ -900,7 +1002,7 @@ function drawCelestial(
     ctx.beginPath();
     ctx.arc(cx, cy, u * 20, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#06231c";
+    ctx.fillStyle = cfg.bg;
     ctx.beginPath();
     ctx.arc(cx - u * 9, cy - u * 4, u * 17, 0, Math.PI * 2);
     ctx.fill();
@@ -937,7 +1039,7 @@ function drawStyleMotif(
     ctx.beginPath();
     ctx.arc(lx, y, u * 20, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#06231c";
+    ctx.fillStyle = cfg.bg;
     ctx.beginPath();
     ctx.arc(lx - u * 9, y - u * 4, u * 17, 0, Math.PI * 2);
     ctx.fill();
@@ -977,13 +1079,14 @@ function composeTicket(
   const m = W * 0.03;
   const cx = W / 2;
   const bg =
-    cfg.label === "Midnight" ? "#06231c" : cfg.label === "Palm" ? "#0c7a45" : GREEN;
+    cfg.bg;
 
   if (bg !== GREEN) {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
   }
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawSceneBackdrop(ctx, m, m, W - m * 2, H - m * 2, u, cfg);
   drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
   drawLanyard(ctx, cx, m, u, bg);
   drawStyleMotif(ctx, W, u, cfg);
@@ -1127,11 +1230,12 @@ export function composeCardBack(
 
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle =
-    cfg.label === "Midnight" ? "#06231c" : cfg.label === "Palm" ? "#0c7a45" : GREEN;
+    cfg.bg;
   ctx.fillRect(0, 0, W, H);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawSceneBackdrop(ctx, m, m, W - m * 2, H - m * 2, u, cfg);
   drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
   drawCornerTicks(
     ctx,
@@ -1292,11 +1396,7 @@ export function composeTeam(input: TeamComposeInput): void {
   const { ctx, w: W, h: H, members, teamName } = input;
   const cfg = STYLE[input.style ?? "sunset"];
   const bg =
-    cfg.label === "Midnight"
-      ? "#06231c"
-      : cfg.label === "Palm"
-        ? "#0c7a45"
-        : GREEN;
+    cfg.bg;
   const u = W / 1200;
   const m = W * 0.03;
 
@@ -1306,6 +1406,8 @@ export function composeTeam(input: TeamComposeInput): void {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawSceneBackdrop(ctx, m, m, W - m * 2, H - m * 2, u, cfg);
+  drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
   // theme motif in the top corners (sun / crescent-moon+stars / palms)
   drawStyleMotif(ctx, W, u * 1.4, cfg, H * 0.072, 0.1);
 

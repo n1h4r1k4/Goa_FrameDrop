@@ -1,4 +1,3 @@
-import SunsetSVG from "./scene/SunsetSVG";
 import { EVENT, WORDMARK, SHARE } from "@/lib/brand";
 
 /** Hand-drawn pink underline that sits beneath the wordmark. */
@@ -27,21 +26,8 @@ const chip =
 
 export default function Hero() {
   return (
-    <section className="relative isolate overflow-hidden px-5 pb-10 pt-4 sm:pb-14">
-      {/* the beach itself — a wide band behind the type */}
-      <div className="hh-scene-fade pointer-events-none absolute inset-x-0 bottom-0 -z-10 opacity-25">
-        <SunsetSVG
-          className="h-[42vh] max-h-[380px] min-h-[220px] w-full"
-          preserveAspectRatio="xMidYMax slice"
-        />
-      </div>
-      {/* the big low sun, cropped by the left edge (desktop only — on a phone
-          there is no margin for it to sit in) */}
-      <div
-        aria-hidden
-        className="sun pointer-events-none absolute bottom-[8%] left-[-2.5rem] -z-10 hidden h-36 w-36 rounded-full border-[3px] border-ink bg-sun-1 shadow-[0_0_90px_28px_rgba(254,225,1,0.28)] sm:block"
-      />
-
+    // the night-beach background image is the scene now — the hero just sets type on it
+    <section className="relative isolate px-5 pb-10 pt-6 sm:pb-16 sm:pt-10">
       <div className="mx-auto flex max-w-5xl flex-col items-center">
         <div className="sub mb-6 flex flex-wrap items-center justify-center gap-2">
           <span className={`${chip} border-ink bg-pink-hot text-white`}>

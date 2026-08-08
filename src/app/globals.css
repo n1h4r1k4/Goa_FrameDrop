@@ -16,6 +16,7 @@
   --color-paper-2: #fdf8ea;
   --color-ink: #0a1a10;
   --color-pink-hot: #ff2d78;
+  --color-night: #060d0a;
 }
 
 /* Fonts from next/font (values set on <html>) */
@@ -38,12 +39,30 @@
     height: 100%;
   }
 
+  /* Night beach: the illustration is fixed behind everything and darkened, so
+     cream paper panels read as lit objects sitting on it. */
   body {
-    background-color: var(--color-goa-green);
+    background-color: var(--color-night);
     color: var(--color-cream);
     font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(4, 10, 8, 0.62) 0%,
+        rgba(4, 10, 8, 0.5) 45%,
+        rgba(4, 10, 8, 0.78) 100%
+      ),
+      url("/bg/night-beach.png") center / cover no-repeat;
+    background-attachment: scroll, fixed;
   }
 
   ::selection {
@@ -264,11 +283,27 @@
       0 0 0.02em var(--color-ink);
   }
 
-  /* the hero beach sits *under* the wordmark, so it fades out before it reaches
-     the type instead of competing with it */
-  .hh-scene-fade {
-    -webkit-mask-image: linear-gradient(to top, #000 40%, transparent 92%);
-    mask-image: linear-gradient(to top, #000 40%, transparent 92%);
+  /* twinkling stars over the night sky (see components/scene/Starfield) */
+  .hh-stars {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .hh-star {
+    position: absolute;
+    border-radius: 9999px;
+    background: #fffbe8;
+    box-shadow: 0 0 6px rgba(255, 251, 232, 0.85);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hh-star {
+      animation-name: hh-twinkle;
+      animation-iteration-count: infinite;
+      animation-timing-function: ease-in-out;
+      animation-direction: alternate;
+    }
   }
 
   /* interactive canvas should own touch gestures (pan/pinch) */
@@ -296,6 +331,17 @@
       translate: 2px 2px;
       box-shadow: 1px 1px 0 var(--color-ink);
     }
+  }
+}
+
+@keyframes hh-twinkle {
+  from {
+    opacity: 0.12;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.15);
   }
 }
 
