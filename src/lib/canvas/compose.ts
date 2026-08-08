@@ -313,5 +313,8 @@ function drawDynamicLayer(
   ctx.fillText(`#${SHARE.hashtag}`, right, baseY);
   ctx.fillStyle = "rgba(255,251,232,0.75)";
   ctx.font = `400 ${S * 0.019}px ${mono}`;
-  ctx.fillText(LINKS.site.replace(/^https?:\/\//, "").replace(/\/$/, ""), right, baseY + S * 0.03);
+  const rightSub = identity?.handle
+    ? `@${identity.handle.replace(/^@/, "")}`
+    : LINKS.site.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  ctx.fillText(rightSub, right, baseY + S * 0.03);
 }

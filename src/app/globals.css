@@ -40,6 +40,12 @@ body {
   color: var(--color-goa-green-deep);
 }
 
+:focus-visible {
+  outline: 2px solid var(--color-sun-1);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* interactive canvas should own touch gestures (pan/pinch) */
 .canvas-surface {
   touch-action: none;
