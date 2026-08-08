@@ -28,15 +28,15 @@ export default function Card3D({
       const height = mount.clientHeight || 520;
 
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
-      camera.position.z = 6.4;
+      const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 100);
+      camera.position.z = 9;
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
       renderer.setSize(width, height);
       mount.appendChild(renderer.domElement);
 
       const aspect = front.width / front.height;
-      const ch = 4.4;
+      const ch = 3.6;
       const cw = ch * aspect;
 
       const frontTex = new THREE.CanvasTexture(front);
@@ -58,6 +58,20 @@ export default function Card3D({
         new THREE.MeshBasicMaterial({ color: 0x0a2a18 }),
       );
       group.add(edge, fMesh, bMesh);
+
+      // pink lanyard cord + loop coming out of the top of the card
+      const cordMat = new THREE.MeshBasicMaterial({ color: 0xe6198a });
+      const cord = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.035, 0.9, 10),
+        cordMat,
+      );
+      cord.position.set(0, ch / 2 + 0.45, 0);
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.2, 0.045, 10, 28),
+        cordMat,
+      );
+      ring.position.set(0, ch / 2 + 0.9, 0);
+      group.add(cord, ring);
       scene.add(group);
 
       let curY = 0;
@@ -99,9 +113,9 @@ export default function Card3D({
         t += 0.016;
         if (!dragging) curY += (targetY - curY) * 0.12;
         tiltX += (targetTilt - tiltX) * 0.1;
-        group.rotation.y = curY;
-        group.rotation.x = tiltX + Math.sin(t * 0.8) * 0.02;
-        group.position.y = Math.sin(t * 1.1) * 0.06;
+        group.rotation.y = curY + (dragging ? 0 : Math.sin(t * 0.5) * 0.32);
+        group.rotation.x = -0.05 + tiltX + Math.sin(t * 0.8) * 0.03;
+        group.position.y = -0.2 + Math.sin(t * 1.1) * 0.05;
         renderer.render(scene, camera);
         raf = requestAnimationFrame(loop);
       };
@@ -125,6 +139,9 @@ export default function Card3D({
         frontTex.dispose();
         backTex.dispose();
         geo.dispose();
+        cord.geometry.dispose();
+        ring.geometry.dispose();
+        cordMat.dispose();
         renderer.dispose();
         if (dom.parentNode === mount) mount.removeChild(dom);
       };

@@ -88,8 +88,8 @@ export const SHAPE: Record<FrameShape, ShapeConfig> = {
     mode: "ticket",
     w: 1000,
     h: 1500,
-    window: { x: 70, y: 205, w: 860, h: 600, kind: "rect", radius: 28 },
-    panel: { x: 70, y: 840, w: 860, h: 150 },
+    window: { x: 70, y: 330, w: 860, h: 560, kind: "rect", radius: 28 },
+    panel: { x: 70, y: 912, w: 860, h: 138 },
     fileName: "hh-goa-ticket",
   },
 };

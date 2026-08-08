@@ -39,9 +39,12 @@ export default function Generator() {
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
   const [view, setView] = useState<"edit" | "3d">("edit");
+  const [generated, setGenerated] = useState(false);
 
   const shape: FrameShape =
     tab === "profile" ? profileShape : tab === "banner" ? "landscape" : "ticket";
+  const needsGenerate = tab === "builderid";
+  const finalized = needsGenerate ? generated : true;
 
   const identity = useMemo<Identity>(
     () => ({
@@ -55,6 +58,7 @@ export default function Generator() {
   const onPhoto = useCallback((p: DecodedPhoto) => {
     setPhoto(p);
     setPlacement(DEFAULT_PLACEMENT);
+    setGenerated(false);
   }, []);
 
   return (
@@ -65,7 +69,10 @@ export default function Generator() {
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTab(t.id);
+              setGenerated(false);
+            }}
             aria-pressed={tab === t.id}
             className={pill(tab === t.id)}
           >
@@ -129,6 +136,7 @@ export default function Generator() {
                   identity={identity}
                   style={style}
                   shape={shape}
+                  finalized={finalized}
                   onPlacementChange={setPlacement}
                 />
               ) : (
@@ -138,6 +146,7 @@ export default function Generator() {
                   identity={identity}
                   style={style}
                   shape={shape}
+                  finalized={finalized}
                 />
               )}
               <FrameControls
@@ -153,13 +162,24 @@ export default function Generator() {
                 onHandle={setHandle}
                 builderClass={identity.builderClass}
               />
-              <ResultActions
-                photo={photo}
-                placement={placement}
-                identity={identity}
-                style={style}
-                shape={shape}
-              />
+              {needsGenerate && !generated ? (
+                <button
+                  type="button"
+                  onClick={() => setGenerated(true)}
+                  className="w-full rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform active:scale-95"
+                >
+                  Generate
+                </button>
+              ) : (
+                <ResultActions
+                  photo={photo}
+                  placement={placement}
+                  identity={identity}
+                  style={style}
+                  shape={shape}
+                  finalized={finalized}
+                />
+              )}
             </>
           )}
         </div>

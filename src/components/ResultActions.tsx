@@ -19,6 +19,7 @@ type Props = {
   style: FrameStyle;
   shape: FrameShape;
   overlay?: OverlaySpec;
+  finalized?: boolean;
 };
 
 export default function ResultActions({
@@ -28,6 +29,7 @@ export default function ResultActions({
   style,
   shape,
   overlay,
+  finalized = true,
 }: Props) {
   const fileName = overlay ? "hh-goa-frame.png" : `${SHAPE[shape].fileName}.png`;
   const [busy, setBusy] = useState<null | "download" | "share">(null);
@@ -46,6 +48,7 @@ export default function ResultActions({
       style,
       shape,
       overlay,
+      finalized,
     });
     blobRef.current = blob;
     dirtyRef.current = false;
@@ -71,6 +74,7 @@ export default function ResultActions({
     style,
     shape,
     overlay,
+    finalized,
   ]);
 
   const onDownload = async () => {

@@ -20,6 +20,7 @@ type Props = {
   style?: FrameStyle;
   shape?: FrameShape;
   overlay?: OverlaySpec;
+  finalized?: boolean;
   onPlacementChange: (p: Placement) => void;
 };
 
@@ -33,6 +34,7 @@ export default function FrameCanvas({
   style,
   shape = "square",
   overlay,
+  finalized = true,
   onPlacementChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -66,8 +68,9 @@ export default function FrameCanvas({
       style,
       shape,
       overlay,
+      finalized,
     });
-  }, [photo, photoSize, identity, style, shape, overlay, hOverW]);
+  }, [photo, photoSize, identity, style, shape, overlay, finalized, hOverW]);
 
   useEffect(() => {
     ensureFontsLoaded().then(draw);

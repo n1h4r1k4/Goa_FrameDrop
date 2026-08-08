@@ -17,6 +17,7 @@ type Props = {
   identity: Identity;
   style: FrameStyle;
   shape: FrameShape;
+  finalized?: boolean;
 };
 
 export default function Card3DView({
@@ -25,6 +26,7 @@ export default function Card3DView({
   identity,
   style,
   shape,
+  finalized = true,
 }: Props) {
   const [cards, setCards] = useState<{
     front: HTMLCanvasElement;
@@ -41,6 +43,7 @@ export default function Card3DView({
         identity,
         style,
         shape,
+        finalized,
       });
       const back = document.createElement("canvas");
       back.width = front.width;
@@ -48,7 +51,7 @@ export default function Card3DView({
       const bx = back.getContext("2d");
       if (bx) {
         await ensureFontsLoaded();
-        composeCardBack(bx, back.width, back.height, identity, style);
+        composeCardBack(bx, back.width, back.height, identity, style, finalized);
       }
       if (alive) setCards({ front, back });
     }, 220);
@@ -67,6 +70,7 @@ export default function Card3DView({
     identity.builderClass,
     style,
     shape,
+    finalized,
   ]);
 
   if (!cards) {

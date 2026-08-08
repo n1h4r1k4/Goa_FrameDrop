@@ -36,6 +36,7 @@ export type ComposeInput = {
   style?: FrameStyle;
   shape?: FrameShape;
   overlay?: OverlaySpec;
+  finalized?: boolean;
 };
 
 type Win = {
@@ -72,7 +73,7 @@ export function compose(input: ComposeInput): void {
   ctx.imageSmoothingQuality = "high";
 
   if (shapeCfg.mode === "ticket") {
-    composeTicket(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity);
+    composeTicket(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity, input.finalized ?? true);
   } else if (shapeCfg.mode === "badge") {
     composeBadge(ctx, w, h, k, win, cfg, photo, photoSize, placement, identity, shapeCfg);
   } else {
@@ -564,24 +565,55 @@ function drawQR(
   }
 }
 
-function drawBarcode(
+/** Pink lanyard clip flaring from the top edge into a punched hole. */
+function drawLanyard(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  topM: number,
+  u: number,
+  bg: string,
+): void {
+  const holeY = topM + u * 92;
+  const holeR = u * 26;
+  ctx.fillStyle = PINK;
+  ctx.beginPath();
+  ctx.moveTo(cx - u * 14, topM - u * 2);
+  ctx.lineTo(cx + u * 14, topM - u * 2);
+  ctx.lineTo(cx + u * 48, holeY + u * 8);
+  ctx.lineTo(cx - u * 48, holeY + u * 8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.arc(cx, holeY, holeR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, u * 3);
+  ctx.strokeStyle = "rgba(10,42,24,0.55)";
+  ctx.stroke();
+}
+
+function drawQRPlaceholder(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  w: number,
-  h: number,
+  box: number,
+  u: number,
 ): void {
-  ctx.fillStyle = DEEP;
-  const ws = [3, 2, 5, 2, 3, 4, 6, 2, 3, 2, 5, 3, 2, 4, 2, 3, 6, 2, 4, 2, 3, 5, 2, 3, 2];
-  const unit = w / 70;
-  let cx = x;
-  let i = 0;
-  while (cx < x + w) {
-    const bw = ws[i % ws.length] * unit;
-    if (i % 2 === 0) ctx.fillRect(cx, y, Math.max(1, bw * 0.6), h);
-    cx += bw;
-    i++;
-  }
+  ctx.save();
+  ctx.setLineDash([u * 9, u * 7]);
+  ctx.lineWidth = Math.max(1, u * 3);
+  ctx.strokeStyle = "rgba(255,251,232,0.35)";
+  roundRectPath(ctx, x, y, box, box, box * 0.06);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "rgba(255,251,232,0.5)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `600 ${u * 20}px ${FONT.mono()}`;
+  ctx.fillText("QR", x + box / 2, y + box / 2 - u * 10);
+  ctx.font = `500 ${u * 15}px ${FONT.mono()}`;
+  ctx.fillText("tap Generate", x + box / 2, y + box / 2 + u * 16);
+  ctx.restore();
 }
 
 function composeTicket(
@@ -595,20 +627,27 @@ function composeTicket(
   photoSize: PhotoSize,
   placement: Placement,
   identity: Identity | undefined,
+  finalized: boolean,
 ): void {
   const u = k;
   const m = W * 0.03;
   const cx = W / 2;
+  const bg = cfg.celestial === "moon" ? "#06231c" : GREEN;
 
+  if (cfg.celestial === "moon") {
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+  }
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawLanyard(ctx, cx, m, u, bg);
 
   // header
-  drawWordmark(ctx, cx, u * 116, u * 60, cfg.accent);
+  drawWordmark(ctx, cx, u * 250, u * 52, cfg.accent);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = PINK;
-  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-  ctx.fillText(`BUILDER PASS · #${SHARE.hashtag}`, cx, u * 160);
+  ctx.font = `600 ${u * 22}px ${FONT.mono()}`;
+  ctx.fillText(`BUILDER PASS · #${SHARE.hashtag}`, cx, u * 292);
 
   // photo window
   ctx.save();
@@ -623,7 +662,7 @@ function composeTicket(
   ctx.stroke();
 
   // name ribbon
-  const p = { x: u * 70, y: u * 840, w: u * 860, h: u * 150 };
+  const p = { x: u * 70, y: u * 912, w: u * 860, h: u * 138 };
   roundRectPath(ctx, p.x, p.y, p.w, p.h, u * 22);
   ctx.fillStyle = CREAM;
   ctx.fill();
@@ -632,76 +671,46 @@ function composeTicket(
   ctx.stroke();
   ctx.textAlign = "center";
   ctx.fillStyle = DEEP;
-  ctx.font = `800 ${u * 56}px ${FONT.display()}`;
+  ctx.font = `800 ${u * 54}px ${FONT.display()}`;
   ctx.fillText(truncate(identity?.name || "BUILDER", 18), cx, p.y + p.h * 0.5);
   ctx.fillStyle = PINK;
-  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+  ctx.font = `600 ${u * 23}px ${FONT.mono()}`;
   ctx.fillText(
-    identity?.builderClass ? `// ${identity.builderClass.toUpperCase()}` : "HH GOA 2026",
+    identity?.builderClass
+      ? `// ${identity.builderClass.toUpperCase()}`
+      : identity?.handle
+        ? `@${identity.handle.replace(/^@/, "")}`
+        : "HH GOA 2026",
     cx,
     p.y + p.h * 0.82,
   );
 
-  // perforation
-  const perfY = u * 1050;
-  ctx.save();
-  ctx.strokeStyle = "rgba(255,251,232,0.5)";
-  ctx.setLineDash([u * 10, u * 8]);
-  ctx.lineWidth = Math.max(1, u * 2);
-  ctx.beginPath();
-  ctx.moveTo(m + u * 20, perfY);
-  ctx.lineTo(W - m - u * 20, perfY);
-  ctx.stroke();
-  ctx.restore();
+  // QR (centered) — gated behind Generate
+  const qbox = u * 250;
+  const qx = cx - qbox / 2;
+  const qy = u * 1088;
+  if (finalized) {
+    drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity)));
+    ctx.fillStyle = "rgba(255,251,232,0.8)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
+    ctx.fillText("SCAN FOR DETAILS", cx, qy + qbox + u * 30);
+  } else {
+    drawQRPlaceholder(ctx, qx, qy, qbox, u);
+  }
 
-  // stub — left fields
-  const lx = u * 82;
-  const field = (label: string, val: string, y: number, vs = 38) => {
-    ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(255,251,232,0.6)";
-    ctx.font = `600 ${u * 20}px ${FONT.mono()}`;
-    ctx.fillText(label, lx, y);
-    ctx.fillStyle = cfg.accent;
-    ctx.font = `800 ${u * vs}px ${FONT.display()}`;
-    ctx.fillText(val, lx, y + u * (vs + 4));
-  };
-  field("GATE", "THE SANDS", u * 1112);
-  field("SEAT", (identity?.builderClass || "BUILDER").toUpperCase().slice(0, 14), u * 1212);
-  ctx.textAlign = "left";
-  ctx.fillStyle = CREAM;
-  ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
-  ctx.fillText(
-    identity?.handle ? `@${identity.handle.replace(/^@/, "")}` : `#${SHARE.hashtag}`,
-    lx,
-    u * 1300,
-  );
-  ctx.fillStyle = "rgba(255,251,232,0.8)";
-  ctx.font = `500 ${u * 19}px ${FONT.mono()}`;
-  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, lx, u * 1332);
-  drawBarcode(ctx, lx, u * 1372, u * 360, u * 56);
-
-  // stub — QR
-  const qbox = u * 236;
-  const qx = W - m - u * 36 - qbox;
-  const qy = u * 1092;
-  drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity)));
+  // footer
   ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(255,251,232,0.75)";
-  ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
-  ctx.fillText("SCAN FOR DETAILS", qx + qbox / 2, qy + qbox + u * 28);
-
-  ctx.textAlign = "right";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "rgba(255,251,232,0.8)";
+  ctx.font = `500 ${u * 20}px ${FONT.mono()}`;
+  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H - m - u * 54);
   ctx.fillStyle = cfg.accent;
   ctx.font = `700 ${u * 22}px ${FONT.mono()}`;
-  ctx.fillText("2:47 PM STUDIO", W - m - u * 24, H - m - u * 34);
+  ctx.fillText("2:47 PM STUDIO", cx, H - m - u * 22);
 
-  // outer border + punched notches
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.045, W);
-  ctx.fillStyle = GREEN;
-  ctx.beginPath();
-  ctx.arc(m, perfY, u * 18, 0, Math.PI * 2);
-  ctx.arc(W - m, perfY, u * 18, 0, Math.PI * 2);
-  ctx.fill();
 }
 
 /** The back of the card: big scannable QR + the builder's details. */
@@ -711,6 +720,7 @@ export function composeCardBack(
   H: number,
   identity: Identity | undefined,
   style: FrameStyle = "sunset",
+  finalized = true,
 ): void {
   const cfg = STYLE[style];
   const S = Math.min(W, H);
@@ -719,7 +729,7 @@ export function composeCardBack(
   const cx = W / 2;
 
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = GREEN;
+  ctx.fillStyle = cfg.celestial === "moon" ? "#06231c" : GREEN;
   ctx.fillRect(0, 0, W, H);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
@@ -734,11 +744,15 @@ export function composeCardBack(
   const qbox = Math.min(W * 0.62, H * 0.42);
   const qx = cx - qbox / 2;
   const qy = H * 0.3;
-  drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity)));
-
-  ctx.fillStyle = CREAM;
-  ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-  ctx.fillText("SCAN FOR DETAILS", cx, qy + qbox + u * 46);
+  if (finalized) {
+    drawQR(ctx, qx, qy, qbox, makeQR(metadataText(identity)));
+    ctx.fillStyle = CREAM;
+    ctx.textAlign = "center";
+    ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
+    ctx.fillText("SCAN FOR DETAILS", cx, qy + qbox + u * 46);
+  } else {
+    drawQRPlaceholder(ctx, qx, qy, qbox, u);
+  }
 
   ctx.fillStyle = cfg.accent;
   ctx.font = `800 ${u * 54}px ${FONT.display()}`;
