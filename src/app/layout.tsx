@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Imbue, Victor_Mono, Mukta } from "next/font/google";
 import "./globals.css";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 
 // Display serif (variable) — oversized headings only
 const imbue = Imbue({
@@ -78,7 +80,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${imbue.variable} ${victorMono.variable} ${mukta.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }

@@ -34,7 +34,7 @@ export default function Generator() {
   }, []);
 
   return (
-    <section className="tool mt-10 w-full max-w-md">
+    <section className="mx-auto mt-10 w-full max-w-md">
       {!photo ? (
         <Uploader onPhoto={onPhoto} />
       ) : (
