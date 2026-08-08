@@ -616,6 +616,43 @@ function drawQRPlaceholder(
   ctx.restore();
 }
 
+function drawStyleMotif(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  u: number,
+  cfg: StyleConfig,
+): void {
+  const y = u * 232;
+  const lx = W * 0.15;
+  const rx = W * 0.85;
+  if (cfg.label === "Midnight") {
+    ctx.fillStyle = CREAM;
+    ctx.beginPath();
+    ctx.arc(lx, y, u * 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#06231c";
+    ctx.beginPath();
+    ctx.arc(lx - u * 9, y - u * 4, u * 17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,251,232,0.9)";
+    for (const [dx, dy, rr] of [
+      [0, -u * 26, u * 3],
+      [u * 24, -u * 2, u * 2.4],
+      [-u * 20, u * 16, u * 2.2],
+    ]) {
+      ctx.beginPath();
+      ctx.arc(rx + dx, y + dy, rr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (cfg.label === "Palm") {
+    palm(ctx, lx, y + u * 40, u * 74, false, cfg.accent);
+    palm(ctx, rx, y + u * 40, u * 74, true, cfg.accent);
+  } else {
+    drawSmallSun(ctx, lx, y, u * 22);
+    drawSmallSun(ctx, rx, y, u * 22);
+  }
+}
+
 function composeTicket(
   ctx: CanvasRenderingContext2D,
   W: number,
@@ -632,14 +669,16 @@ function composeTicket(
   const u = k;
   const m = W * 0.03;
   const cx = W / 2;
-  const bg = cfg.celestial === "moon" ? "#06231c" : GREEN;
+  const bg =
+    cfg.label === "Midnight" ? "#06231c" : cfg.label === "Palm" ? "#0c7a45" : GREEN;
 
-  if (cfg.celestial === "moon") {
+  if (bg !== GREEN) {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
   }
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
   drawLanyard(ctx, cx, m, u, bg);
+  drawStyleMotif(ctx, W, u, cfg);
 
   // header
   drawWordmark(ctx, cx, u * 250, u * 52, cfg.accent);
@@ -729,7 +768,8 @@ export function composeCardBack(
   const cx = W / 2;
 
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = cfg.celestial === "moon" ? "#06231c" : GREEN;
+  ctx.fillStyle =
+    cfg.label === "Midnight" ? "#06231c" : cfg.label === "Palm" ? "#0c7a45" : GREEN;
   ctx.fillRect(0, 0, W, H);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";

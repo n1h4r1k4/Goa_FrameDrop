@@ -3,8 +3,10 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Interactive 3D flip card (Three.js, lazy-loaded). Front = the generated graphic,
- * back = the QR/details. Drag/flick to flip.
+ * Interactive 3D badge on a lanyard (Three.js, lazy-loaded). The card hangs from a
+ * fixed pivot by a pink cord; drag it to swing it around like a real lanyard (damped
+ * pendulum), double-tap/click to flip it and reveal the QR on the back. Auto-fits any
+ * card aspect (portrait ticket, landscape banner, square).
  */
 export default function Card3D({
   front,
@@ -25,19 +27,27 @@ export default function Card3D({
       const THREE = await import("three");
       if (cancelled || !mount) return;
       const width = mount.clientWidth || 360;
-      const height = mount.clientHeight || 520;
+      const height = mount.clientHeight || 540;
 
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 100);
-      camera.position.z = 9;
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
       renderer.setSize(width, height);
       mount.appendChild(renderer.domElement);
 
+      // card size — fit the larger dimension so any aspect looks consistent
       const aspect = front.width / front.height;
-      const ch = 3.6;
-      const cw = ch * aspect;
+      let cw: number;
+      let ch: number;
+      if (aspect >= 1) {
+        cw = 5;
+        ch = 5 / aspect;
+      } else {
+        ch = 4.8;
+        cw = 4.8 * aspect;
+      }
+      const cordLen = 0.95;
+      const loopR = 0.22;
 
       const frontTex = new THREE.CanvasTexture(front);
       frontTex.colorSpace = THREE.SRGBColorSpace;
@@ -46,8 +56,18 @@ export default function Card3D({
       backTex.colorSpace = THREE.SRGBColorSpace;
       backTex.anisotropy = frontTex.anisotropy;
 
+      // hierarchy: swing (pivot) -> cord + loop + flip(card)
+      const cordMat = new THREE.MeshBasicMaterial({ color: 0xe6198a });
+      const loop = new THREE.Mesh(new THREE.TorusGeometry(loopR, 0.05, 14, 36), cordMat);
+      const cord = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, cordLen, 14),
+        cordMat,
+      );
+      cord.position.y = -cordLen / 2;
+
+      const flip = new THREE.Group();
+      flip.position.y = -cordLen - ch / 2;
       const geo = new THREE.PlaneGeometry(cw, ch);
-      const group = new THREE.Group();
       const fMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: frontTex }));
       fMesh.position.z = 0.05;
       const bMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: backTex }));
@@ -57,28 +77,34 @@ export default function Card3D({
         new THREE.BoxGeometry(cw, ch, 0.06),
         new THREE.MeshBasicMaterial({ color: 0x0a2a18 }),
       );
-      group.add(edge, fMesh, bMesh);
+      flip.add(edge, fMesh, bMesh);
 
-      // pink lanyard cord + loop coming out of the top of the card
-      const cordMat = new THREE.MeshBasicMaterial({ color: 0xe6198a });
-      const cord = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.035, 0.035, 0.9, 10),
-        cordMat,
-      );
-      cord.position.set(0, ch / 2 + 0.45, 0);
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.2, 0.045, 10, 28),
-        cordMat,
-      );
-      ring.position.set(0, ch / 2 + 0.9, 0);
-      group.add(cord, ring);
-      scene.add(group);
+      const swing = new THREE.Group();
+      swing.add(loop, cord, flip);
+      const pivotY = ch / 2 + cordLen;
+      swing.position.set(0, pivotY, 0);
+      scene.add(swing);
 
-      let curY = 0;
-      let targetY = 0;
-      let velY = 0;
-      let tiltX = 0;
-      let targetTilt = 0;
+      // camera fit (handles portrait + landscape)
+      const fov = 32;
+      const camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, 100);
+      const contentTop = pivotY + loopR + 0.1;
+      const contentBottom = pivotY - (cordLen + ch);
+      const midY = (contentTop + contentBottom) / 2;
+      const totalH = contentTop - contentBottom;
+      const totalW = cw + 1.6;
+      const camAspect = width / height;
+      const tan = Math.tan((fov * Math.PI) / 180 / 2);
+      const dist = Math.max(totalH / (2 * tan), totalW / (2 * tan * camAspect)) * 1.12;
+      camera.position.set(0, midY, dist);
+      camera.lookAt(0, midY, 0);
+
+      // physics state
+      let theta = 0;
+      let omega = 0;
+      let phi = 0;
+      let phiV = 0;
+      let phiTarget = 0;
       let dragging = false;
       let lastX = 0;
       let t = 0;
@@ -87,39 +113,43 @@ export default function Card3D({
       const onDown = (e: PointerEvent) => {
         dragging = true;
         lastX = e.clientX;
-        velY = 0;
+        omega = 0;
       };
       const onMove = (e: PointerEvent) => {
-        const rect = dom.getBoundingClientRect();
-        targetTilt = ((e.clientY - rect.top) / rect.height - 0.5) * -0.35;
-        if (dragging) {
-          const dx = e.clientX - lastX;
-          lastX = e.clientX;
-          curY += dx * 0.01;
-          velY = dx * 0.01;
-        }
+        if (!dragging) return;
+        const dx = e.clientX - lastX;
+        lastX = e.clientX;
+        theta = Math.max(-1.15, Math.min(1.15, theta + dx * 0.006));
+        omega = dx * 0.006;
       };
       const onUp = () => {
-        if (!dragging) return;
         dragging = false;
-        targetY = Math.round((curY + velY * 4) / Math.PI) * Math.PI;
+      };
+      const onFlip = () => {
+        phiTarget = phiTarget === 0 ? Math.PI : 0;
       };
       dom.addEventListener("pointerdown", onDown);
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
+      dom.addEventListener("dblclick", onFlip);
 
       let raf = 0;
-      const loop = () => {
-        t += 0.016;
-        if (!dragging) curY += (targetY - curY) * 0.12;
-        tiltX += (targetTilt - tiltX) * 0.1;
-        group.rotation.y = curY + (dragging ? 0 : Math.sin(t * 0.5) * 0.32);
-        group.rotation.x = -0.05 + tiltX + Math.sin(t * 0.8) * 0.03;
-        group.position.y = -0.2 + Math.sin(t * 1.1) * 0.05;
+      const render = () => {
+        t += 1;
+        if (!dragging) {
+          const breeze = Math.sin(t * 0.02) * 0.00055;
+          omega += -0.02 * Math.sin(theta) - 0.03 * omega + breeze;
+          theta += omega;
+        }
+        phiV += (phiTarget - phi) * 0.14;
+        phiV *= 0.72;
+        phi += phiV;
+        swing.rotation.z = theta;
+        flip.rotation.y = phi;
         renderer.render(scene, camera);
-        raf = requestAnimationFrame(loop);
+        raf = requestAnimationFrame(render);
       };
-      loop();
+      render();
 
       const onResize = () => {
         const w2 = mount.clientWidth || width;
@@ -136,11 +166,13 @@ export default function Card3D({
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         dom.removeEventListener("pointerdown", onDown);
+        dom.removeEventListener("dblclick", onFlip);
         frontTex.dispose();
         backTex.dispose();
         geo.dispose();
         cord.geometry.dispose();
-        ring.geometry.dispose();
+        loop.geometry.dispose();
+        edge.geometry.dispose();
         cordMat.dispose();
         renderer.dispose();
         if (dom.parentNode === mount) mount.removeChild(dom);
@@ -157,7 +189,7 @@ export default function Card3D({
     <div
       ref={mountRef}
       data-card3d
-      className="h-[520px] w-full max-w-[380px] cursor-grab touch-none select-none active:cursor-grabbing"
+      className="h-[540px] w-full max-w-[420px] cursor-grab touch-none select-none active:cursor-grabbing"
     />
   );
 }

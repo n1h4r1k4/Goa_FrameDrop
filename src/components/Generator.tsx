@@ -32,6 +32,8 @@ const pill = (active: boolean) =>
 export default function Generator() {
   const [tab, setTab] = useState<Tab>("builderid");
   const [profileShape, setProfileShape] = useState<Extract<FrameShape, "square" | "circle">>("square");
+  const [builderidShape, setBuilderidShape] =
+    useState<Extract<FrameShape, "ticket" | "tall" | "arch">>("ticket");
 
   const [photo, setPhoto] = useState<DecodedPhoto | null>(null);
   const [placement, setPlacement] = useState<Placement>(DEFAULT_PLACEMENT);
@@ -42,8 +44,12 @@ export default function Generator() {
   const [generated, setGenerated] = useState(false);
 
   const shape: FrameShape =
-    tab === "profile" ? profileShape : tab === "banner" ? "landscape" : "ticket";
-  const needsGenerate = tab === "builderid";
+    tab === "profile"
+      ? profileShape
+      : tab === "banner"
+        ? "landscape"
+        : builderidShape;
+  const needsGenerate = shape === "ticket";
   const finalized = needsGenerate ? generated : true;
 
   const identity = useMemo<Identity>(
@@ -99,6 +105,31 @@ export default function Generator() {
                   onClick={() => setProfileShape(v)}
                   aria-pressed={profileShape === v}
                   className={pill(profileShape === v)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {tab === "builderid" && (
+            <div className="flex flex-wrap justify-center gap-2">
+              {(
+                [
+                  ["ticket", "Ticket"],
+                  ["tall", "Badge"],
+                  ["arch", "Arch"],
+                ] as const
+              ).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => {
+                    setBuilderidShape(v);
+                    setGenerated(false);
+                  }}
+                  aria-pressed={builderidShape === v}
+                  className={pill(builderidShape === v)}
                 >
                   {label}
                 </button>

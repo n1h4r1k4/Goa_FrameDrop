@@ -82,7 +82,7 @@ export default function Card3DView({
     <div className="flex flex-col items-center gap-2">
       <Card3D front={cards.front} back={cards.back} />
       <p className="font-mono text-xs text-cream/60">
-        drag to flip · QR on the back
+        drag to swing the lanyard · double-tap to flip for the QR
       </p>
     </div>
   );
