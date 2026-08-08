@@ -151,6 +151,41 @@ function windowPath(ctx: CanvasRenderingContext2D, win: Win, inset = 0): void {
 const truncate = (s: string, n: number) =>
   s.length > n ? s.slice(0, n - 1) + "…" : s;
 
+const atHandle = (identity?: Identity) => {
+  const h = identity?.handle?.trim().replace(/^@+/, "");
+  return h ? `@${h}` : "";
+};
+
+/**
+ * The line under the name: "@handle · // BUILDER CLASS". These used to be an
+ * either/or, which meant the handle never showed — a class is always assigned
+ * as soon as there's a name.
+ */
+function subline(identity?: Identity): string {
+  return [
+    atHandle(identity),
+    identity?.builderClass ? `// ${identity.builderClass.toUpperCase()}` : "",
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+}
+
+/** Set ctx.font at `size`, shrunk just enough that `text` fits `maxW`. */
+function fitFont(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxW: number,
+  size: number,
+  family: string,
+  weight = "600",
+): void {
+  ctx.font = `${weight} ${size}px ${family}`;
+  const w = ctx.measureText(text).width;
+  if (w > maxW) {
+    ctx.font = `${weight} ${Math.max(size * 0.55, size * (maxW / w))}px ${family}`;
+  }
+}
+
 // ---------- decorative helpers ----------
 
 function drawGrid(
@@ -394,10 +429,17 @@ function composeBleed(
   // bottom row: name pill (or wordmark) + meta
   const by = win.y + win.h - pad * 0.85;
   ctx.textBaseline = "alphabetic";
+  const handle = atHandle(identity);
   if (isCircle) {
     ctx.textAlign = "center";
     if (identity?.name) {
       drawNamePill(ctx, 0, by - u * 24, identity.name, u, "center", win.x + win.w / 2);
+      if (handle) {
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = SUN;
+        ctx.font = `600 ${u * 22}px ${FONT.mono()}`;
+        ctx.fillText(handle, win.x + win.w / 2, by - u * 68);
+      }
     } else {
       ctx.fillStyle = SUN;
       ctx.font = `600 ${u * 26}px ${FONT.mono()}`;
@@ -405,7 +447,16 @@ function composeBleed(
     }
   } else {
     if (identity?.name) {
-      drawNamePill(ctx, win.x + pad, by - u * 26, identity.name, u, "left");
+      // handle sits on the pill's baseline rather than above it — stacking two
+      // small labels in the corner reads as clutter
+      const pw = drawNamePill(ctx, win.x + pad, by - u * 26, identity.name, u, "left");
+      if (handle) {
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = SUN;
+        ctx.font = `600 ${u * 22}px ${FONT.mono()}`;
+        ctx.fillText(handle, win.x + pad + pw + u * 16, by - u * 24);
+      }
     } else {
       ctx.textAlign = "left";
       ctx.fillStyle = SUN;
@@ -485,14 +536,11 @@ function composeBadge(
       ctx.fillStyle = DEEP;
       ctx.font = `800 ${u * 62}px ${FONT.display()}`;
       ctx.fillText(truncate(identity.name, 18), p.x + p.w / 2, p.y + p.h * 0.44);
-      if (identity.builderClass) {
+      const sub = subline(identity);
+      if (sub) {
         ctx.fillStyle = PINK;
-        ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-        ctx.fillText(
-          `// ${identity.builderClass.toUpperCase()}`,
-          p.x + p.w / 2,
-          p.y + p.h * 0.66,
-        );
+        fitFont(ctx, sub, p.w - u * 44, u * 24, FONT.mono());
+        ctx.fillText(sub, p.x + p.w / 2, p.y + p.h * 0.66);
       }
       ctx.fillStyle = GREEN;
       ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
@@ -792,16 +840,9 @@ function composeTicket(
   ctx.font = `800 ${u * 54}px ${FONT.display()}`;
   ctx.fillText(truncate(identity?.name || "BUILDER", 18), cx, p.y + p.h * 0.5);
   ctx.fillStyle = PINK;
-  ctx.font = `600 ${u * 23}px ${FONT.mono()}`;
-  ctx.fillText(
-    identity?.builderClass
-      ? `// ${identity.builderClass.toUpperCase()}`
-      : identity?.handle
-        ? `@${identity.handle.replace(/^@/, "")}`
-        : "HH GOA 2026",
-    cx,
-    p.y + p.h * 0.82,
-  );
+  const sub = subline(identity) || "HH GOA 2026";
+  fitFont(ctx, sub, p.w - u * 44, u * 23, FONT.mono());
+  ctx.fillText(sub, cx, p.y + p.h * 0.82);
 
   // stub: the QR lives on the BACK of the pass, so the front carries the
   // paper-ticket furniture instead — perforation, serial, barcode
@@ -904,9 +945,10 @@ export function composeCardBack(
   // whatever room is left. Offsetting down from the QR only worked on tall cards.
   const studioY = H - m - u * 48;
   const datesY = H - m - u * 82;
+  const sub = subline(identity);
   const serialY = datesY - u * 50;
   const classY = serialY - u * 38;
-  const nameY = classY - (identity?.builderClass ? u * 48 : u * 10);
+  const nameY = classY - (sub ? u * 48 : u * 10);
   const scanY = nameY - u * 48;
 
   const qTop = m + u * 180;
@@ -927,10 +969,10 @@ export function composeCardBack(
   ctx.fillStyle = cfg.accent;
   ctx.font = `800 ${u * 54}px ${FONT.display()}`;
   ctx.fillText(truncate(identity?.name || "BUILDER", 18), cx, nameY);
-  if (identity?.builderClass) {
+  if (sub) {
     ctx.fillStyle = PINK;
-    ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-    ctx.fillText(truncate(`// ${identity.builderClass.toUpperCase()}`, 34), cx, classY);
+    fitFont(ctx, sub, W - m * 2 - u * 80, u * 24, FONT.mono());
+    ctx.fillText(sub, cx, classY);
   }
   // same serial as the front, so the two sides read as one pass
   ctx.fillStyle = "rgba(255,251,232,0.55)";
