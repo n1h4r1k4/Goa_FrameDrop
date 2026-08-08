@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HH Goa 2026 — Frame / ID Card Generator
 
-## Getting Started
+Upload a photo → get an unmistakable **HH Goa 2026** profile frame → download it or share to X with **#FrameInGoa**. Built for the HH Goa 2026 shortlisting task (Format A: PFP frame / overlay).
 
-First, run the development server:
+**Live:** _add after deploy_
+
+## Features
+
+- **Client-side, near-instant** compositing — no server round-trip to generate the image.
+- **Real photos:** jpg / png / **HEIC** (iPhone), any aspect ratio. Drag to reposition, pinch / scroll to zoom (WYSIWYG — the preview equals the export).
+- **Retina PNG export**, guarded against the iOS canvas size cap (no black images).
+- **Share to X:** native file share on mobile (attaches the real PNG); on desktop, a Blob-hosted `/s/[id]` link whose **OG image is the actual graphic**, so the tweet preview shows it. Pre-filled caption + `#FrameInGoa`.
+- **Signature GSAP "sun going down" intro** that reveals the tool (respects `prefers-reduced-motion`).
+- **On-brand with [hhgoa.com](https://hhgoa.com/):** Imbue + Victor Mono, Goa green + sun-yellow, bilingual गोवा, line-art sunset scene.
+- Optional **name / handle** + an auto-generated **builder class**, and a discreet **"Est. · 5th edition"** heritage stamp (the Dimo Hack series lineage).
+
+## Tech
+
+Next.js 16 (App Router, Turbopack) · React 19 · Tailwind v4 · GSAP (`@gsap/react`) · `heic-to` · Vercel Blob.
+
+## Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For the desktop Share link locally, link the project and pull the Blob token:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+vercel link && vercel env pull .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy (Vercel)
 
-## Learn More
+1. Import this repo at **vercel.com/new** — it auto-deploys on every push to `main`.
+2. **Storage → Create → Blob** — Vercel injects `BLOB_READ_WRITE_TOKEN` into the project.
+3. (Optional) set `NEXT_PUBLIC_SITE_URL` to your domain (otherwise the Vercel production URL is used automatically).
 
-To learn more about Next.js, take a look at the following resources:
+## How it works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- The photo is composited entirely on a `<canvas>` (`src/lib/canvas`), so download is instant and offline.
+- Share id = base64url of the public Blob URL (host-validated) → `/s/[id]` sets the OG image with no datastore.
+- Design / motion / canvas / share decisions are documented as project skills in `.claude/skills/`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Made for HH Goa 2026 · 2:47 pm Studio · `#FrameInGoa`
