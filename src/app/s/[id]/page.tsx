@@ -60,34 +60,29 @@ export default async function SharePage({
           alt="HH Goa 2026 frame"
           width={360}
           height={360}
-          className="w-full max-w-[360px] rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+          className="w-full max-w-[360px] rounded-xl border-[3px] border-ink shadow-[7px_7px_0_var(--color-ink)]"
         />
       ) : (
-        <p className="font-mono text-sm text-cream/70">
+        <p className="hh-panel px-5 py-4 font-mono text-sm">
           This frame link has expired or is invalid.
         </p>
       )}
 
-      <h1 className="mt-8 text-center font-display text-4xl font-black uppercase leading-none text-sun-1">
-        Frame yours
-      </h1>
+      <h1 className="hh-h mt-10 text-center text-5xl text-sun-1">Frame yours</h1>
       <p className="mt-3 text-center font-mono text-xs text-cream/70">
-        Make your own HH Goa 2026 frame and post it with{" "}
-        <span className="text-sun-1">#{SHARE.hashtag}</span>.
+        Make your own HH Goa 2026 pass and post it with{" "}
+        <span className="font-bold text-sun-1">#{SHARE.hashtag}</span>.
       </p>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Link
-          href="/"
-          className="rounded-full bg-sun-1 px-6 py-3 text-center font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform active:scale-95"
-        >
-          Make your frame
+      <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+        <Link href="/" className="hh-btn hh-btn-sun">
+          Make your pass
         </Link>
         <a
           href={LINKS.apply}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-full border-2 border-sun-1 px-6 py-3 text-center font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform active:scale-95"
+          className="hh-btn hh-btn-pink"
         >
           Apply to HH Goa
         </a>

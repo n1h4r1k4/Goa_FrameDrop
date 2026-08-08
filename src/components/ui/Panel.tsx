@@ -13,10 +13,12 @@ export function Panel({
   children: ReactNode;
   className?: string;
 }) {
+  // the pin is a sibling of the sheet, not a child: the sheet clips its own
+  // corners (so hazard tape can run edge to edge) and would otherwise cut it off
   return (
-    <div className={`hh-panel relative overflow-hidden ${className}`}>
+    <div className={`relative ${className}`}>
       <span className="hh-pin" aria-hidden />
-      {children}
+      <div className="hh-panel overflow-hidden">{children}</div>
     </div>
   );
 }
