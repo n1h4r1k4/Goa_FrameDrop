@@ -9,6 +9,7 @@
   --color-sun-3: #f9dc01;
   --color-cream: #fffbe8;
   --color-goa-red: #e2231a;
+  --color-goa-pink: #e6198a;
 }
 
 /* Fonts from next/font (values set on <html>) */
@@ -44,6 +45,16 @@ body {
   outline: 2px solid var(--color-sun-1);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+/* sticker-style गोवा wordmark: pink fill, cream outline, deep-green depth */
+.deva-sticker {
+  color: var(--color-goa-pink);
+  -webkit-text-stroke: 0.055em var(--color-cream);
+  paint-order: stroke;
+  text-shadow:
+    0.018em 0.05em 0 var(--color-goa-green-deep),
+    0 0 0.02em var(--color-goa-green-deep);
 }
 
 /* interactive canvas should own touch gestures (pan/pinch) */

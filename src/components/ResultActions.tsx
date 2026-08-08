@@ -9,10 +9,21 @@ import { SHARE } from "@/lib/brand";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Placement } from "@/lib/canvas/transform";
 import type { Identity } from "@/lib/canvas/compose";
+import type { FrameStyle } from "@/lib/canvas/styles";
 
-type Props = { photo: DecodedPhoto; placement: Placement; identity: Identity };
+type Props = {
+  photo: DecodedPhoto;
+  placement: Placement;
+  identity: Identity;
+  style: FrameStyle;
+};
 
-export default function ResultActions({ photo, placement, identity }: Props) {
+export default function ResultActions({
+  photo,
+  placement,
+  identity,
+  style,
+}: Props) {
   const [busy, setBusy] = useState<null | "download" | "share">(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -26,6 +37,7 @@ export default function ResultActions({ photo, placement, identity }: Props) {
       photoSize: photo.size,
       placement,
       identity,
+      style,
     });
     blobRef.current = blob;
     dirtyRef.current = false;
@@ -48,6 +60,7 @@ export default function ResultActions({ photo, placement, identity }: Props) {
     identity.name,
     identity.handle,
     identity.builderClass,
+    style,
   ]);
 
   const onDownload = async () => {

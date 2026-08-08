@@ -5,17 +5,16 @@ import Uploader from "./Uploader";
 import FrameCanvas from "./FrameCanvas";
 import FrameControls from "./FrameControls";
 import ResultActions from "./ResultActions";
-import {
-  DEFAULT_PLACEMENT,
-  type Placement,
-} from "@/lib/canvas/transform";
+import { DEFAULT_PLACEMENT, type Placement } from "@/lib/canvas/transform";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Identity } from "@/lib/canvas/compose";
+import type { FrameStyle } from "@/lib/canvas/styles";
 import { builderClass } from "@/lib/badge";
 
 export default function Generator() {
   const [photo, setPhoto] = useState<DecodedPhoto | null>(null);
   const [placement, setPlacement] = useState<Placement>(DEFAULT_PLACEMENT);
+  const [style, setStyle] = useState<FrameStyle>("sunset");
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
 
@@ -44,6 +43,7 @@ export default function Generator() {
             photoSize={photo.size}
             placement={placement}
             identity={identity}
+            style={style}
             onPlacementChange={setPlacement}
           />
           <FrameControls
@@ -51,13 +51,20 @@ export default function Generator() {
             onScale={(s) => setPlacement((p) => ({ ...p, scale: s }))}
             onReset={() => setPlacement(DEFAULT_PLACEMENT)}
             onChangePhoto={() => setPhoto(null)}
+            style={style}
+            onStyle={setStyle}
             name={name}
             handle={handle}
             onName={setName}
             onHandle={setHandle}
             builderClass={identity.builderClass}
           />
-          <ResultActions photo={photo} placement={placement} identity={identity} />
+          <ResultActions
+            photo={photo}
+            placement={placement}
+            identity={identity}
+            style={style}
+          />
         </div>
       )}
     </section>

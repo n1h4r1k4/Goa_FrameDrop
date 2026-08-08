@@ -10,12 +10,14 @@ import {
 } from "@/lib/canvas/transform";
 import { PREVIEW_SIZE } from "@/lib/canvas/constants";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
+import type { FrameStyle } from "@/lib/canvas/styles";
 
 type Props = {
   photo: CanvasImageSource;
   photoSize: PhotoSize;
   placement: Placement;
   identity?: Identity;
+  style?: FrameStyle;
   onPlacementChange: (p: Placement) => void;
 };
 
@@ -26,6 +28,7 @@ export default function FrameCanvas({
   photoSize,
   placement,
   identity,
+  style,
   onPlacementChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -50,8 +53,9 @@ export default function FrameCanvas({
       photoSize,
       placement: placementRef.current,
       identity,
+      style,
     });
-  }, [photo, photoSize, identity]);
+  }, [photo, photoSize, identity, style]);
 
   // redraw once fonts are ready, and whenever inputs change
   useEffect(() => {

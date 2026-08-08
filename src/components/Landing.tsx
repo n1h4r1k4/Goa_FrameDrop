@@ -23,10 +23,10 @@ export default function Landing() {
         (ctx) => {
           const revealed = [".hk-line", ".deva", ".tagline", ".sub", ".tool"];
           if (ctx.conditions?.reduce) {
-            gsap.set([...revealed, ".sun", ".ray", ".palm", ".horizon"], {
-              autoAlpha: 1,
-              clearProps: "transform",
-            });
+            gsap.set(
+              [...revealed, ".sun", ".ray", ".palm", ".horizon", ".scene-el"],
+              { autoAlpha: 1, clearProps: "transform" },
+            );
             return;
           }
           const tl = gsap.timeline({
@@ -52,7 +52,11 @@ export default function Landing() {
               { scaleX: 0, svgOrigin: "180 120", duration: 0.5 },
               "<",
             )
-            .from(".palm", { y: 28, autoAlpha: 0, stagger: 0.12 }, "<0.05")
+            .from(
+              [".scene-el", ".palm"],
+              { y: 22, autoAlpha: 0, stagger: 0.05 },
+              "<0.05",
+            )
             .from(
               ".hk-line",
               { y: 48, autoAlpha: 0, stagger: 0.12, duration: 0.7 },
@@ -82,22 +86,20 @@ export default function Landing() {
       </p>
 
       <h1
-        className="text-center font-display font-black uppercase leading-[0.78] text-sun-1"
-        style={{ fontSize: "clamp(2.75rem, 12vw, 6.5rem)" }}
+        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center font-display font-black uppercase leading-[0.82] text-sun-1"
+        style={{ fontSize: "clamp(3rem, 15vw, 9rem)" }}
       >
-        <span className="hk-line block">{WORDMARK.line1}</span>
-        <span className="hk-line relative block">
-          {WORDMARK.line2}
-          <span
-            className="deva pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-deva text-goa-red"
-            style={{ fontSize: "0.42em" }}
-          >
-            {WORDMARK.deva}
-          </span>
+        <span className="hk-line">{WORDMARK.line1}</span>
+        <span
+          className="hk-line deva-sticker font-deva leading-none"
+          style={{ fontSize: "0.6em" }}
+        >
+          {WORDMARK.deva}
         </span>
+        <span className="hk-line">{WORDMARK.line2}</span>
       </h1>
 
-      <div className="pointer-events-none mt-1 w-full max-w-md">
+      <div className="pointer-events-none -mt-1 w-full max-w-3xl">
         <SunsetSVG className="w-full" />
       </div>
 

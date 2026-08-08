@@ -11,6 +11,7 @@ export const COLORS = {
   sun3: "#f9dc01",
   cream: "#fffbe8",
   red: "#e2231a",
+  pink: "#e6198a",
   white: "#ffffff",
 } as const;
 
