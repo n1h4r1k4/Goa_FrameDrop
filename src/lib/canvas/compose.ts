@@ -246,6 +246,108 @@ function pinkBorderRect(
   ctx.stroke();
 }
 
+/**
+ * Sparse halftone dots — gives the flat green a printed-poster tooth. Seeded off
+ * position only, so it's identical between preview and export.
+ */
+function drawHalftone(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  u: number,
+): void {
+  ctx.save();
+  ctx.fillStyle = "rgba(255,251,232,0.055)";
+  const step = u * 26;
+  const r = Math.max(0.6, u * 1.5);
+  for (let gy = y + step / 2, row = 0; gy < y + h; gy += step, row++) {
+    for (let gx = x + (row % 2 ? step / 2 : 0); gx < x + w; gx += step) {
+      ctx.beginPath();
+      ctx.arc(gx, gy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/** L-brackets at the four corners of a rect — printer's registration marks. */
+function drawCornerTicks(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  len: number,
+  color: string,
+  lw: number,
+): void {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = "square";
+  const corners: [number, number, number, number][] = [
+    [x, y, 1, 1],
+    [x + w, y, -1, 1],
+    [x, y + h, 1, -1],
+    [x + w, y + h, -1, -1],
+  ];
+  for (const [px, py, sx, sy] of corners) {
+    ctx.beginPath();
+    ctx.moveTo(px + sx * len, py);
+    ctx.lineTo(px, py);
+    ctx.lineTo(px, py + sy * len);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Faint fan of rays behind the header — the sunset motif, abstracted. */
+function drawRayFan(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  r: number,
+  color: string,
+  lw: number,
+): void {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = "round";
+  for (let i = 0; i < 11; i++) {
+    const a = Math.PI + (i / 10) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r * 0.42, cy + Math.sin(a) * r * 0.42);
+    ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Cream passe-partout ring around the photo, so it reads as mounted on paper. */
+function drawPhotoMat(
+  ctx: CanvasRenderingContext2D,
+  win: Win,
+  u: number,
+  W: number,
+): void {
+  const g = u * 11;
+  ctx.save();
+  windowPath(
+    ctx,
+    { ...win, x: win.x - g, y: win.y - g, w: win.w + g * 2, h: win.h + g * 2, radius: win.radius + g },
+    0,
+  );
+  ctx.fillStyle = CREAM;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, W * 0.004);
+  ctx.strokeStyle = "rgba(10,42,24,0.35)";
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawSmallSun(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -405,6 +507,18 @@ function composeBleed(
   ctx.restore();
 
   pinkBorderWindow(ctx, win, W);
+  if (!isCircle) {
+    drawCornerTicks(
+      ctx,
+      win.x + pad * 0.5,
+      win.y + pad * 0.5,
+      win.w - pad,
+      win.h - pad,
+      u * 24,
+      "rgba(254,225,1,0.55)",
+      Math.max(1, u * 3),
+    );
+  }
 
   // theme motif (sun / crescent-moon+stars / palm), top-right of the window
   drawCelestial(ctx, win.x + win.w - pad - u * 18, win.y + pad + u * 22, u, cfg);
@@ -490,13 +604,25 @@ function composeBadge(
   const cx = W / 2;
 
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.05, W);
+  drawCornerTicks(
+    ctx,
+    m + u * 46,
+    m + u * 46,
+    W - m * 2 - u * 92,
+    H - m * 2 - u * 92,
+    u * 26,
+    "rgba(254,225,1,0.5)",
+    Math.max(1, u * 3),
+  );
 
   // theme motifs (sun / moon / palm) flanking the title
   drawCelestial(ctx, W * 0.17, win.y - u * 72, u, cfg);
   drawCelestial(ctx, W * 0.83, win.y - u * 72, u, cfg);
 
-  // title block above the photo
+  // title block above the photo, on a faint fan of rays
+  drawRayFan(ctx, cx, win.y - u * 46, u * 250, "rgba(254,225,1,0.14)", Math.max(1, u * 3));
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = CREAM;
@@ -506,7 +632,8 @@ function composeBadge(
   ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
   ctx.fillText(`BUILDER ID · #${SHARE.hashtag}`, cx, win.y - u * 30);
 
-  // clean photo window
+  // photo window, mounted on a cream mat
+  drawPhotoMat(ctx, win, u, W);
   ctx.save();
   windowPath(ctx, win);
   ctx.clip();
@@ -804,10 +931,12 @@ function composeTicket(
     ctx.fillRect(0, 0, W, H);
   }
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
   drawLanyard(ctx, cx, m, u, bg);
   drawStyleMotif(ctx, W, u, cfg);
 
-  // header
+  // header, on a faint fan of rays
+  drawRayFan(ctx, cx, u * 262, u * 230, "rgba(254,225,1,0.16)", Math.max(1, u * 3));
   drawWordmark(ctx, cx, u * 250, u * 52, cfg.accent);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -815,7 +944,8 @@ function composeTicket(
   ctx.font = `600 ${u * 22}px ${FONT.mono()}`;
   ctx.fillText(`BUILDER PASS · #${SHARE.hashtag}`, cx, u * 292);
 
-  // photo window
+  // photo, mounted on a cream mat
+  drawPhotoMat(ctx, win, u, W);
   ctx.save();
   roundRectPath(ctx, win.x, win.y, win.w, win.h, win.radius);
   ctx.clip();
@@ -827,7 +957,7 @@ function composeTicket(
   ctx.strokeStyle = PINK;
   ctx.stroke();
 
-  // name ribbon
+  // name ribbon, flanked by suns
   const p = { x: u * 70, y: u * 912, w: u * 860, h: u * 138 };
   roundRectPath(ctx, p.x, p.y, p.w, p.h, u * 22);
   ctx.fillStyle = CREAM;
@@ -835,10 +965,12 @@ function composeTicket(
   ctx.lineWidth = Math.max(1, u * 3.5);
   ctx.strokeStyle = PINK;
   ctx.stroke();
+  drawSmallSun(ctx, p.x + u * 52, p.y + p.h * 0.42, u * 18);
+  drawSmallSun(ctx, p.x + p.w - u * 52, p.y + p.h * 0.42, u * 18);
   ctx.textAlign = "center";
   ctx.fillStyle = DEEP;
   ctx.font = `800 ${u * 54}px ${FONT.display()}`;
-  ctx.fillText(truncate(identity?.name || "BUILDER", 18), cx, p.y + p.h * 0.5);
+  ctx.fillText(truncate(identity?.name || "BUILDER", 16), cx, p.y + p.h * 0.5);
   ctx.fillStyle = PINK;
   const sub = subline(identity) || "HH GOA 2026";
   fitFont(ctx, sub, p.w - u * 44, u * 23, FONT.mono());
@@ -894,6 +1026,17 @@ function composeTicket(
     perfY + u * 236,
   );
 
+  drawCornerTicks(
+    ctx,
+    m + u * 46,
+    m + u * 46,
+    W - m * 2 - u * 92,
+    H - m * 2 - u * 92,
+    u * 26,
+    "rgba(254,225,1,0.5)",
+    Math.max(1, u * 3),
+  );
+
   // footer — clear of the inner pink rule, which sits W*0.022 in from the edge
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -933,6 +1076,17 @@ export function composeCardBack(
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
+  drawCornerTicks(
+    ctx,
+    m + u * 46,
+    m + u * 46,
+    W - m * 2 - u * 92,
+    H - m * 2 - u * 92,
+    u * 26,
+    "rgba(254,225,1,0.5)",
+    Math.max(1, u * 3),
+  );
 
   drawWordmark(ctx, cx, m + u * 80, u * 54, cfg.accent);
   ctx.textAlign = "center";

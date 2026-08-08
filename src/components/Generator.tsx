@@ -103,6 +103,7 @@ export default function Generator() {
   const variants = VARIANTS[tab];
   const currentVariant = tab === "profile" ? profileShape : builderidShape;
   const setVariant = (v: FrameShape) => {
+    setFlipped(false); // a new template always opens on its front
     if (tab === "profile") setProfileShape(v as "square" | "circle");
     else if (tab === "builderid") {
       setBuilderidShape(v as "ticket" | "tall" | "arch");
@@ -123,6 +124,7 @@ export default function Generator() {
     setPhoto(p);
     setPlacement(DEFAULT_PLACEMENT);
     setGenerated(false);
+    setFlipped(false);
   }, []);
 
   // GSAP reveal + stagger when the preview appears / template changes
@@ -146,10 +148,8 @@ export default function Generator() {
   );
 
   const cfg = SHAPE[shape];
-  // only pass-shaped outputs have a back worth showing; a PFP or a banner is an
-  // image, not a card
-  const twoSided = cfg.mode === "ticket" || cfg.mode === "badge";
-  const showingBack = twoSided && flipped;
+  // every template is two-sided — the back is the scannable QR card
+  const showingBack = flipped;
 
   return (
     <section id="generator" className="scroll-mt-4 px-4 py-10 sm:px-6 sm:py-14">
@@ -163,6 +163,7 @@ export default function Generator() {
               onClick={(e) => {
                 setTab(id);
                 setGenerated(false);
+                setFlipped(false);
                 pop(e.currentTarget);
               }}
               aria-pressed={tab === id}
@@ -369,7 +370,7 @@ export default function Generator() {
                   )}
                 </div>
 
-                {photo && view === "edit" && twoSided && (
+                {photo && view === "edit" && (
                   <button
                     type="button"
                     onClick={() => setFlipped((f) => !f)}
