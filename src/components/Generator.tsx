@@ -10,7 +10,7 @@ import Card3DView from "./Card3DView";
 import { DEFAULT_PLACEMENT, type Placement } from "@/lib/canvas/transform";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Identity } from "@/lib/canvas/compose";
-import type { FrameStyle } from "@/lib/canvas/styles";
+import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
 import type { FrameShape } from "@/lib/canvas/shapes";
 import { builderClass } from "@/lib/badge";
 
@@ -22,16 +22,46 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "team", label: "Team" },
 ];
 
-const pill = (active: boolean) =>
+// per-tab template variants
+const VARIANTS: Record<Tab, [FrameShape, string][]> = {
+  builderid: [
+    ["ticket", "Ticket"],
+    ["tall", "Badge"],
+    ["arch", "Arch"],
+  ],
+  profile: [
+    ["square", "Square"],
+    ["circle", "Circle"],
+  ],
+  banner: [],
+  team: [],
+};
+
+// a swatch colour per style for the compact dot picker
+const STYLE_DOT: Record<FrameStyle, string> = {
+  sunset: "#fee101",
+  midnight: "#06231c",
+  palm: "#0c7a45",
+};
+
+const tab_pill = (active: boolean) =>
   `rounded-full px-4 py-2 font-mono text-xs uppercase tracking-widest transition-colors ${
     active
       ? "bg-sun-1 text-goa-green-deep"
       : "border border-cream/25 text-cream/75 hover:border-sun-1/70"
   }`;
 
+const chip = (active: boolean) =>
+  `rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-widest transition-colors ${
+    active
+      ? "bg-sun-1 text-goa-green-deep"
+      : "border border-cream/25 text-cream/70 hover:border-sun-1/70"
+  }`;
+
 export default function Generator() {
   const [tab, setTab] = useState<Tab>("builderid");
-  const [profileShape, setProfileShape] = useState<Extract<FrameShape, "square" | "circle">>("square");
+  const [profileShape, setProfileShape] =
+    useState<Extract<FrameShape, "square" | "circle">>("square");
   const [builderidShape, setBuilderidShape] =
     useState<Extract<FrameShape, "ticket" | "tall" | "arch">>("ticket");
 
@@ -52,6 +82,16 @@ export default function Generator() {
   const needsGenerate = shape === "ticket";
   const finalized = needsGenerate ? generated : true;
 
+  const variants = VARIANTS[tab];
+  const currentVariant = tab === "profile" ? profileShape : builderidShape;
+  const setVariant = (v: FrameShape) => {
+    if (tab === "profile") setProfileShape(v as "square" | "circle");
+    else if (tab === "builderid") {
+      setBuilderidShape(v as "ticket" | "tall" | "arch");
+      setGenerated(false);
+    }
+  };
+
   const identity = useMemo<Identity>(
     () => ({
       name: name.trim() || undefined,
@@ -69,7 +109,7 @@ export default function Generator() {
 
   return (
     <section className="mx-auto mt-8 w-full max-w-md">
-      {/* tabs */}
+      {/* primary nav */}
       <div className="mb-5 flex flex-wrap justify-center gap-2">
         {TABS.map((t) => (
           <button
@@ -80,7 +120,7 @@ export default function Generator() {
               setGenerated(false);
             }}
             aria-pressed={tab === t.id}
-            className={pill(tab === t.id)}
+            className={tab_pill(tab === t.id)}
           >
             {t.label}
           </button>
@@ -89,129 +129,134 @@ export default function Generator() {
 
       {tab === "team" ? (
         <TeamMode />
+      ) : !photo ? (
+        <div className="flex flex-col items-center">
+          <Uploader onPhoto={onPhoto} />
+        </div>
       ) : (
-        <div className="flex flex-col items-center gap-5">
-          {tab === "profile" && (
-            <div className="flex gap-2">
-              {(
-                [
-                  ["square", "Square"],
-                  ["circle", "Circle"],
-                ] as const
-              ).map(([v, label]) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setProfileShape(v)}
-                  aria-pressed={profileShape === v}
-                  className={pill(profileShape === v)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {tab === "builderid" && (
-            <div className="flex flex-wrap justify-center gap-2">
-              {(
-                [
-                  ["ticket", "Ticket"],
-                  ["tall", "Badge"],
-                  ["arch", "Arch"],
-                ] as const
-              ).map(([v, label]) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => {
-                    setBuilderidShape(v);
-                    setGenerated(false);
-                  }}
-                  aria-pressed={builderidShape === v}
-                  className={pill(builderidShape === v)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {!photo ? (
-            <Uploader onPhoto={onPhoto} />
+        <div className="flex flex-col items-center gap-4">
+          {view === "edit" ? (
+            <FrameCanvas
+              photo={photo.bitmap}
+              photoSize={photo.size}
+              placement={placement}
+              identity={identity}
+              style={style}
+              shape={shape}
+              finalized={finalized}
+              onPlacementChange={setPlacement}
+            />
           ) : (
-            <>
-              <div className="flex gap-2">
+            <Card3DView
+              photo={photo}
+              placement={placement}
+              identity={identity}
+              style={style}
+              shape={shape}
+              finalized={finalized}
+            />
+          )}
+
+          {/* one compact toolbar: template · theme · 2D/3D */}
+          <div className="flex w-full flex-wrap items-center justify-between gap-3">
+            {variants.length > 0 ? (
+              <div className="flex gap-1.5">
+                {variants.map(([v, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setVariant(v)}
+                    aria-pressed={currentVariant === v}
+                    className={chip(currentVariant === v)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span />
+            )}
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                {FRAME_STYLES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStyle(s)}
+                    aria-pressed={s === style}
+                    title={STYLE[s].label}
+                    aria-label={`${STYLE[s].label} theme`}
+                    className={`h-6 w-6 rounded-full transition ${
+                      s === style
+                        ? "ring-2 ring-sun-1 ring-offset-2 ring-offset-goa-green"
+                        : "opacity-70 hover:opacity-100"
+                    }`}
+                    style={{
+                      background: STYLE_DOT[s],
+                      border: "1px solid rgba(255,251,232,0.35)",
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="flex rounded-full border border-cream/25 p-0.5 font-mono text-[11px] uppercase tracking-widest">
                 <button
                   type="button"
                   onClick={() => setView("edit")}
                   aria-pressed={view === "edit"}
-                  className={pill(view === "edit")}
+                  className={`rounded-full px-3 py-1 transition-colors ${
+                    view === "edit"
+                      ? "bg-sun-1 text-goa-green-deep"
+                      : "text-cream/70"
+                  }`}
                 >
-                  Edit
+                  2D
                 </button>
                 <button
                   type="button"
                   onClick={() => setView("3d")}
                   aria-pressed={view === "3d"}
-                  className={pill(view === "3d")}
+                  className={`rounded-full px-3 py-1 transition-colors ${
+                    view === "3d"
+                      ? "bg-sun-1 text-goa-green-deep"
+                      : "text-cream/70"
+                  }`}
                 >
-                  3D Card
+                  3D
                 </button>
               </div>
-              {view === "edit" ? (
-                <FrameCanvas
-                  photo={photo.bitmap}
-                  photoSize={photo.size}
-                  placement={placement}
-                  identity={identity}
-                  style={style}
-                  shape={shape}
-                  finalized={finalized}
-                  onPlacementChange={setPlacement}
-                />
-              ) : (
-                <Card3DView
-                  photo={photo}
-                  placement={placement}
-                  identity={identity}
-                  style={style}
-                  shape={shape}
-                  finalized={finalized}
-                />
-              )}
-              <FrameControls
-                scale={placement.scale}
-                onScale={(s) => setPlacement((p) => ({ ...p, scale: s }))}
-                onReset={() => setPlacement(DEFAULT_PLACEMENT)}
-                onChangePhoto={() => setPhoto(null)}
-                style={style}
-                onStyle={setStyle}
-                name={name}
-                handle={handle}
-                onName={setName}
-                onHandle={setHandle}
-                builderClass={identity.builderClass}
-              />
-              {needsGenerate && !generated ? (
-                <button
-                  type="button"
-                  onClick={() => setGenerated(true)}
-                  className="w-full rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform active:scale-95"
-                >
-                  Generate
-                </button>
-              ) : (
-                <ResultActions
-                  photo={photo}
-                  placement={placement}
-                  identity={identity}
-                  style={style}
-                  shape={shape}
-                  finalized={finalized}
-                />
-              )}
-            </>
+            </div>
+          </div>
+
+          <FrameControls
+            scale={placement.scale}
+            onScale={(s) => setPlacement((p) => ({ ...p, scale: s }))}
+            onReset={() => setPlacement(DEFAULT_PLACEMENT)}
+            onChangePhoto={() => setPhoto(null)}
+            name={name}
+            handle={handle}
+            onName={setName}
+            onHandle={setHandle}
+            builderClass={identity.builderClass}
+          />
+
+          {needsGenerate && !generated ? (
+            <button
+              type="button"
+              onClick={() => setGenerated(true)}
+              className="w-full rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform active:scale-95"
+            >
+              Generate
+            </button>
+          ) : (
+            <ResultActions
+              photo={photo}
+              placement={placement}
+              identity={identity}
+              style={style}
+              shape={shape}
+              finalized={finalized}
+            />
           )}
         </div>
       )}

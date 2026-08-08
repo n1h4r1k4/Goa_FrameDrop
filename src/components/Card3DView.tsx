@@ -32,6 +32,7 @@ export default function Card3DView({
     front: HTMLCanvasElement;
     back: HTMLCanvasElement;
   } | null>(null);
+  const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -79,10 +80,22 @@ export default function Card3DView({
     );
   }
   return (
-    <div className="flex flex-col items-center gap-2">
-      <Card3D front={cards.front} back={cards.back} />
-      <p className="font-mono text-xs text-cream/60">
-        drag to swing the lanyard · double-tap to flip for the QR
+    <div className="flex flex-col items-center gap-3">
+      <Card3D
+        front={cards.front}
+        back={cards.back}
+        flipped={flipped}
+        onFlip={() => setFlipped((f) => !f)}
+      />
+      <button
+        type="button"
+        onClick={() => setFlipped((f) => !f)}
+        className="rounded-full border border-cream/25 px-5 py-2 font-mono text-xs uppercase tracking-widest text-cream/80 transition-colors hover:border-sun-1/70 active:scale-95"
+      >
+        {flipped ? "Show front" : "Flip to QR ↻"}
+      </button>
+      <p className="font-mono text-[11px] text-cream/50">
+        grab the card and fling it — the lanyard swings
       </p>
     </div>
   );

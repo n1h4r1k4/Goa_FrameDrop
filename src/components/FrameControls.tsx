@@ -1,15 +1,12 @@
 "use client";
 
 import { COLORS } from "@/lib/brand";
-import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
 
 type Props = {
   scale: number;
   onScale: (n: number) => void;
   onReset: () => void;
   onChangePhoto: () => void;
-  style: FrameStyle;
-  onStyle: (s: FrameStyle) => void;
   name: string;
   handle: string;
   onName: (v: string) => void;
@@ -22,8 +19,6 @@ export default function FrameControls({
   onScale,
   onReset,
   onChangePhoto,
-  style,
-  onStyle,
   name,
   handle,
   onName,
@@ -32,30 +27,6 @@ export default function FrameControls({
 }: Props) {
   return (
     <div className="flex w-full flex-col gap-4">
-      {/* style */}
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-xs uppercase tracking-widest text-cream/60">
-          Style
-        </span>
-        <div className="flex flex-1 gap-2">
-          {FRAME_STYLES.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onStyle(s)}
-              aria-pressed={s === style}
-              className={`flex-1 rounded-full px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors ${
-                s === style
-                  ? "bg-sun-1 text-goa-green-deep"
-                  : "border border-cream/25 text-cream/75 hover:border-sun-1/70"
-              }`}
-            >
-              {STYLE[s].label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* zoom */}
       <div className="flex items-center gap-3">
         <span className="font-mono text-xs uppercase tracking-widest text-cream/60">
