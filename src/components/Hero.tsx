@@ -29,16 +29,17 @@ export default function Hero() {
   return (
     <section className="relative isolate overflow-hidden px-5 pb-10 pt-4 sm:pb-14">
       {/* the beach itself — a wide band behind the type */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 opacity-70">
+      <div className="hh-scene-fade pointer-events-none absolute inset-x-0 bottom-0 -z-10 opacity-25">
         <SunsetSVG
-          className="h-[48vh] max-h-[420px] min-h-[240px] w-full"
+          className="h-[42vh] max-h-[380px] min-h-[220px] w-full"
           preserveAspectRatio="xMidYMax slice"
         />
       </div>
-      {/* the big low sun, cropped by the left edge */}
+      {/* the big low sun, cropped by the left edge (desktop only — on a phone
+          there is no margin for it to sit in) */}
       <div
         aria-hidden
-        className="sun pointer-events-none absolute bottom-[16%] left-[-4rem] -z-10 h-32 w-32 rounded-full border-[3px] border-ink bg-sun-1 shadow-[0_0_90px_28px_rgba(254,225,1,0.28)] sm:left-[-2rem] sm:h-40 sm:w-40"
+        className="sun pointer-events-none absolute bottom-[8%] left-[-2.5rem] -z-10 hidden h-36 w-36 rounded-full border-[3px] border-ink bg-sun-1 shadow-[0_0_90px_28px_rgba(254,225,1,0.28)] sm:block"
       />
 
       <div className="mx-auto flex max-w-5xl flex-col items-center">

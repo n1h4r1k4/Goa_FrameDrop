@@ -31,21 +31,25 @@ export default function NoticeBoard() {
 
       <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-2">
         {FAQ.map(({ q, a }) => (
-          <details key={q} className="hh-panel group relative px-5 py-4">
+          // the pin lives outside <details>: anything in there that isn't the
+          // <summary> is hidden while the card is closed
+          <div key={q} className="relative">
             <span className="hh-pin" aria-hidden />
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-mono text-sm font-bold [&::-webkit-details-marker]:hidden">
-              {q}
-              <span
-                aria-hidden
-                className="shrink-0 text-xl leading-none text-pink-hot transition-transform group-open:rotate-45"
-              >
-                +
-              </span>
-            </summary>
-            <p className="mt-3 border-t-2 border-ink/15 pt-3 font-mono text-xs leading-relaxed text-ink/75">
-              {a}
-            </p>
-          </details>
+            <details className="hh-panel group px-5 py-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-mono text-sm font-bold [&::-webkit-details-marker]:hidden">
+                {q}
+                <span
+                  aria-hidden
+                  className="shrink-0 text-xl leading-none text-pink-hot transition-transform group-open:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="mt-3 border-t-2 border-ink/15 pt-3 font-mono text-xs leading-relaxed text-ink/75">
+                {a}
+              </p>
+            </details>
+          </div>
         ))}
       </div>
 

@@ -264,6 +264,13 @@
       0 0 0.02em var(--color-ink);
   }
 
+  /* the hero beach sits *under* the wordmark, so it fades out before it reaches
+     the type instead of competing with it */
+  .hh-scene-fade {
+    -webkit-mask-image: linear-gradient(to top, #000 40%, transparent 92%);
+    mask-image: linear-gradient(to top, #000 40%, transparent 92%);
+  }
+
   /* interactive canvas should own touch gestures (pan/pinch) */
   .canvas-surface {
     touch-action: none;

@@ -81,6 +81,8 @@ export default function Generator() {
   const [placement, setPlacement] = useState<Placement>(DEFAULT_PLACEMENT);
   const [style, setStyle] = useState<FrameStyle>("sunset");
   const [name, setName] = useState("");
+  // only scold about the empty name once they've actually been in the field
+  const [nameTouched, setNameTouched] = useState(false);
   const [handle, setHandle] = useState("");
   const [view, setView] = useState<"edit" | "3d">("edit");
   const [generated, setGenerated] = useState(false);
@@ -94,6 +96,7 @@ export default function Generator() {
   const needsGenerate = shape === "ticket";
   const finalized = needsGenerate ? generated : true;
   const hasName = name.trim().length > 0;
+  const nameMissing = nameTouched && !hasName;
 
   const variants = VARIANTS[tab];
   const currentVariant = tab === "profile" ? profileShape : builderidShape;
@@ -212,11 +215,12 @@ export default function Generator() {
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      onBlur={() => setNameTouched(true)}
                       placeholder="Your name"
                       required
                       aria-required="true"
                       maxLength={24}
-                      className={`hh-input ${hasName ? "" : "shadow-[3px_3px_0_var(--color-goa-red)]"}`}
+                      className={`hh-input ${nameMissing ? "shadow-[3px_3px_0_var(--color-goa-red)]" : ""}`}
                     />
                   </label>
                   <label className="block">
@@ -242,10 +246,12 @@ export default function Generator() {
                       </span>{" "}
                       — assigned from your name.
                     </>
-                  ) : (
+                  ) : nameMissing ? (
                     <span className="text-goa-red">
                       Your name is needed before the pass can be issued.
                     </span>
+                  ) : (
+                    "Your name goes on the pass, and sets your builder class."
                   )}
                 </p>
               </div>
