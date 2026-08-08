@@ -18,7 +18,10 @@ export async function POST(request: Request): Promise<NextResponse> {
         // A retina ticket is 2000×3000 and a crew card 2400²; both clear 6 MB,
         // and hitting the cap silently dropped the share to a text-only post.
         maximumSizeInBytes: 20_000_000,
-        addRandomSuffix: true,
+        // Off on purpose: a share uploads two blobs that must share a stem
+        // (<id>.png for the page, <id>-og.png for the card), so the pathname
+        // has to survive intact. The client already names them with nanoid.
+        addRandomSuffix: false,
       }),
       // Not reachable on localhost; the browser gets the URL from upload() directly.
       onUploadCompleted: async () => {},

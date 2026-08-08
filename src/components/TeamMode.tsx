@@ -352,7 +352,8 @@ export default function TeamMode() {
           identity: crewIdentity,
           label: "CREW PASS",
         });
-        const { shareId } = await uploadFrame(card);
+        // blob = the pass (shown on /s), card = the plate (the link preview)
+        const { shareId } = await uploadFrame(blob, card);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`, CAPTION);
         hosted = true;
       } catch {

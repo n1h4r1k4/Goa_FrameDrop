@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { decodeShareId } from "@/lib/share/shareId";
+import { shareImages } from "@/lib/share/shareId";
 import { SHARE_CARD } from "@/lib/canvas/export";
 import { SHARE, LINKS, EVENT } from "@/lib/brand";
 
@@ -16,8 +16,10 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const imageUrl = decodeShareId(id);
-  if (!imageUrl) return { title: TITLE, description: DESCRIPTION };
+  const images = shareImages(id);
+  if (!images) return { title: TITLE, description: DESCRIPTION };
+  // the plate, not the pass — X wants ~2:1 or it demotes to a thumbnail
+  const imageUrl = images.og;
   return {
     title: TITLE,
     description: DESCRIPTION,
@@ -53,7 +55,9 @@ export default async function SharePage({
   params: Promise<Params>;
 }) {
   const { id } = await params;
-  const imageUrl = decodeShareId(id);
+  // the page shows the pass itself, at its own aspect — the plate is only ever
+  // for the link preview
+  const imageUrl = shareImages(id)?.pass ?? null;
 
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-12">
@@ -64,10 +68,8 @@ export default async function SharePage({
       {imageUrl ? (
         <img
           src={imageUrl}
-          alt="HH Goa 2026 frame"
-          width={360}
-          height={360}
-          className="w-full max-w-[360px] rounded-xl border-[3px] border-ink shadow-[7px_7px_0_var(--color-ink)]"
+          alt="HH Goa 2026 pass"
+          className="h-auto w-full max-w-[460px] rounded-xl border-[3px] border-ink shadow-[7px_7px_0_var(--color-ink)]"
         />
       ) : (
         <p className="hh-panel px-5 py-4 font-mono text-sm">

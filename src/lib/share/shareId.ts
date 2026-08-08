@@ -44,11 +44,21 @@ export function encodeShareId(url: string): string {
   return toBase64(url).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** Returns the public Blob URL, or null if the id is malformed/untrusted. */
-export function decodeShareId(id: string): string | null {
+/**
+ * The two images behind a share: `pass` is the card itself (what the page
+ * shows), `og` is the 1200×630 plate the link preview points at. Older shares
+ * only stored one image, so both fall back to it.
+ */
+export type ShareImages = { pass: string; og: string };
+
+export function shareImages(id: string): ShareImages | null {
   const compact = COMPACT.exec(id);
   if (compact) {
-    return `https://${compact[1]}${HOST_SUFFIX}/${DIR}/${compact[2]}.png`;
+    const base = `https://${compact[1]}${HOST_SUFFIX}/${DIR}/${compact[2]}`;
+    // Our own stems are nanoid(10). Anything longer is a pre-plate share whose
+    // pathname carried Blob's random suffix — it has no -og twin.
+    const hasPlate = compact[2].length <= 12;
+    return { pass: `${base}.png`, og: `${base}${hasPlate ? "-og" : ""}.png` };
   }
   // legacy base64 ids — validate the host, since the URL came from the id
   try {
@@ -56,8 +66,13 @@ export function decodeShareId(id: string): string | null {
     const u = new URL(fromBase64(b64));
     if (u.protocol !== "https:") return null;
     if (!u.hostname.endsWith(".blob.vercel-storage.com")) return null;
-    return u.toString();
+    return { pass: u.toString(), og: u.toString() };
   } catch {
     return null;
   }
+}
+
+/** The card image alone. */
+export function decodeShareId(id: string): string | null {
+  return shareImages(id)?.pass ?? null;
 }

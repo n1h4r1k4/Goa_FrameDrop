@@ -148,7 +148,8 @@ export default function ResultActions({
           finalized,
         });
         const card = await renderShareCardToBlob({ pass, style, identity });
-        const { shareId } = await uploadFrame(card);
+        // blob = the pass (shown on /s), card = the plate (the link preview)
+        const { shareId } = await uploadFrame(blob, card);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`);
         hosted = true;
       } catch {
