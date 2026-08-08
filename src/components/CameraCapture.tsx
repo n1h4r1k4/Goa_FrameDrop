@@ -116,29 +116,25 @@ export default function CameraCapture({
             ref={videoRef}
             playsInline
             muted
-            className="max-h-[70vh] w-auto rounded-2xl border-2 border-sun-1/60"
+            className="max-h-[70vh] w-auto rounded-xl border-[3px] border-ink shadow-[6px_6px_0_var(--color-ink)]"
             style={{ transform: facing === "user" ? "scaleX(-1)" : undefined }}
           />
           {err && <p className="mt-2 font-mono text-xs text-goa-red">{err}</p>}
-          <div className="mt-5 flex items-center gap-3">
+          <div className="mt-6 flex items-center gap-3">
             <button
               type="button"
               onClick={close}
-              className="rounded-full border border-cream/40 px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-cream/80"
+              className="hh-btn hh-btn-paper"
             >
               Cancel
             </button>
-            <button
-              type="button"
-              onClick={flip}
-              className="rounded-full border border-cream/40 px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-cream/80"
-            >
+            <button type="button" onClick={flip} className="hh-btn hh-btn-paper">
               Flip
             </button>
             <button
               type="button"
               onClick={capture}
-              className="rounded-full bg-sun-1 px-7 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-goa-green-deep"
+              className="hh-btn hh-btn-sun px-7"
             >
               Capture
             </button>

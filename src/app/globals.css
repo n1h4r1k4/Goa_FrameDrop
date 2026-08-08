@@ -60,7 +60,10 @@
 
 /* ---------------------------------------------------------------- poster kit
    Paper panels + hard ink borders + offset drop shadows. Everything on the page
-   is one of: panel, button, input, tape, pin. Keep it to these five.
+   is one of: panel, mode card, tile, button, input, tape, pin.
+
+   Selected state is driven off `aria-pressed="true"` rather than a conditional
+   class, so the styling and the accessibility tree can't drift apart.
 
    These live in @layer components on purpose: Tailwind's `utilities` layer is
    declared after it, so a `border-sun-1` on a `.hh-btn` still wins. */
@@ -137,6 +140,53 @@
   .hh-btn-ink {
     background: var(--color-goa-green-deep);
     color: var(--color-cream);
+  }
+
+  /* big top-level mode card (Builder Pass / PFP / Banner / Crew) */
+  .hh-mode {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1rem;
+    text-align: left;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    border: var(--ink-w) solid var(--color-ink);
+    border-radius: var(--ink-r);
+    box-shadow: 6px 6px 0 var(--color-ink);
+    transition:
+      translate 0.12s ease,
+      box-shadow 0.12s ease,
+      background-color 0.12s ease;
+  }
+  .hh-mode[aria-pressed="true"] {
+    background: var(--color-sun-1);
+  }
+
+  /* small selectable tile (template variant, theme swatch) */
+  .hh-tile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.7rem;
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+    border: 2px solid var(--color-ink);
+    border-radius: 10px;
+    box-shadow: 3px 3px 0 var(--color-ink);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition:
+      translate 0.12s ease,
+      box-shadow 0.12s ease,
+      background-color 0.12s ease;
+  }
+  .hh-tile[aria-pressed="true"] {
+    background: var(--color-sun-1);
   }
 
   .hh-input {
@@ -222,12 +272,20 @@
   }
 }
 
+/* press physics: the sheet lifts on hover and gets pushed into the page on click */
 @media (prefers-reduced-motion: no-preference) {
-  .hh-btn:hover:not(:disabled) {
+  .hh-btn:hover:not(:disabled),
+  .hh-tile:hover:not(:disabled) {
     translate: -2px -2px;
     box-shadow: 6px 6px 0 var(--color-ink);
   }
-  .hh-btn:active:not(:disabled) {
+  .hh-mode:hover:not(:disabled) {
+    translate: -2px -2px;
+    box-shadow: 8px 8px 0 var(--color-ink);
+  }
+  .hh-btn:active:not(:disabled),
+  .hh-tile:active:not(:disabled),
+  .hh-mode:active:not(:disabled) {
     translate: 2px 2px;
     box-shadow: 1px 1px 0 var(--color-ink);
   }

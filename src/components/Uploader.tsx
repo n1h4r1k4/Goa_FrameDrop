@@ -8,6 +8,7 @@ import {
   type DecodedPhoto,
 } from "@/lib/heic/decode";
 import CameraCapture from "./CameraCapture";
+import { UploadIcon } from "./icons";
 
 type Props = { onPhoto: (p: DecodedPhoto) => void };
 
@@ -53,46 +54,31 @@ export default function Uploader({ onPhoto }: Props) {
           handle(e.dataTransfer.files?.[0]);
         }}
         disabled={busy}
-        className={`group flex w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed px-6 py-14 text-center transition-colors ${
+        className={`flex w-full flex-col items-center justify-center gap-3 rounded-xl border-[3px] border-dashed px-6 py-10 text-center transition-colors ${
           drag
-            ? "border-sun-1 bg-goa-green-deep/60"
-            : "border-cream/25 bg-goa-green-deep/30 hover:border-sun-1/70"
+            ? "border-pink-hot bg-sun-1/25"
+            : "border-ink/45 bg-paper-2 hover:border-ink"
         }`}
       >
-        <svg
-          width="38"
-          height="38"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-          className={`text-sun-1 ${busy ? "animate-pulse" : ""}`}
+        <span
+          className={`flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-ink bg-sun-1 shadow-[3px_3px_0_var(--color-ink)] ${
+            busy ? "animate-pulse" : ""
+          }`}
         >
-          <path
-            d="M12 15V3m0 0L8 7m4-4l4 4"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-        <span className="font-mono text-sm uppercase tracking-[0.2em] text-sun-1">
-          {busy ? "Reading photo…" : "Upload a photo"}
+          <UploadIcon className="h-5 w-5 text-ink" />
         </span>
-        <span className="font-mono text-xs text-cream/60">
-          tap to choose · or drop it here · jpg / png / heic
+        <span className="font-mono text-sm font-bold uppercase tracking-[0.12em] text-ink">
+          {busy ? "Reading photo…" : "Upload photo"}
+        </span>
+        <span className="font-mono text-[0.7rem] text-ink/55">
+          Drag &amp; drop or click to browse · JPG / PNG / HEIC
         </span>
       </button>
 
       <CameraCapture
         onCapture={(f) => handle(f)}
         label="Take a photo"
-        className="mt-3 w-full rounded-full border-2 border-sun-1 px-6 py-3 font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform active:scale-95"
+        className="hh-btn hh-btn-paper mt-3 w-full"
       />
 
       <input
@@ -104,7 +90,10 @@ export default function Uploader({ onPhoto }: Props) {
       />
 
       {error && (
-        <p className="mt-3 font-mono text-xs text-goa-red" role="alert">
+        <p
+          className="mt-3 rounded-lg border-2 border-goa-red bg-goa-red/10 px-3 py-2 font-mono text-xs text-goa-red"
+          role="alert"
+        >
           {error}
         </p>
       )}

@@ -127,40 +127,42 @@ export default function ResultActions({
   };
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex w-full flex-col gap-3 sm:flex-row">
-        <button
-          type="button"
-          onClick={onDownload}
-          disabled={busy !== null}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
-        >
-          {busy === "download" ? (
-            "Rendering…"
-          ) : (
-            <>
-              <DownloadIcon className="h-4 w-4" />
-              Download PNG
-            </>
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={onShare}
-          disabled={busy !== null}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
-        >
-          {busy === "share" ? (
-            "Preparing…"
-          ) : (
-            <>
-              <ShareIcon className="h-4 w-4" />
-              Share to X · #{SHARE.hashtag}
-            </>
-          )}
-        </button>
-      </div>
-      {note && <p className="font-mono text-xs text-cream/70">{note}</p>}
+    <div className="flex w-full flex-col gap-3">
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={busy !== null}
+        className="hh-btn hh-btn-sun w-full py-4 text-sm"
+      >
+        {busy === "download" ? (
+          "Rendering…"
+        ) : (
+          <>
+            <DownloadIcon className="h-4 w-4" />
+            Download PNG
+          </>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={onShare}
+        disabled={busy !== null}
+        className="hh-btn hh-btn-pink w-full py-4 text-sm"
+      >
+        {busy === "share" ? (
+          "Preparing…"
+        ) : (
+          <>
+            <ShareIcon className="h-4 w-4" />
+            Share to X · #{SHARE.hashtag}
+          </>
+        )}
+      </button>
+      {note && (
+        <p className="rounded-lg border-2 border-ink/25 bg-paper-2 px-3 py-2 font-mono text-[0.7rem] text-ink/75">
+          {note}
+        </p>
+      )}
     </div>
   );
 }

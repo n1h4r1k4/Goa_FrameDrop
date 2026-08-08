@@ -167,10 +167,16 @@ export default function FrameCanvas({
     <canvas
       ref={canvasRef}
       aria-label="Your HH Goa 2026 frame preview. Drag to reposition, pinch or scroll to zoom"
-      className="canvas-surface settle w-full cursor-grab touch-none rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] active:cursor-grabbing"
+      className="canvas-surface settle w-full cursor-grab touch-none rounded-xl border-[3px] border-ink shadow-[6px_6px_0_var(--color-ink)] active:cursor-grabbing"
       style={{
         aspectRatio: overlay ? "1 / 1" : `${cfg.w} / ${cfg.h}`,
-        maxWidth: !overlay && cfg.mode === "badge" ? 320 : !overlay && cfg.h === 630 ? 460 : 360,
+        maxWidth: overlay
+          ? 400
+          : cfg.mode === "badge"
+            ? 360
+            : cfg.h === 630
+              ? 520
+              : 400,
       }}
     />
   );
