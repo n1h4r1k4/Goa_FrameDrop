@@ -12,9 +12,12 @@ import {
 import { composeTeam, composeCardBack } from "@/lib/canvas/compose";
 import {
   renderTeamToBlob,
+  renderTeamToCanvas,
   renderCardBackToBlob,
+  renderCardBackToCanvas,
   downloadBlob,
 } from "@/lib/canvas/export";
+import Card3D from "./Card3D";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
 import { shareImageFile } from "@/lib/share/webshare";
 import { tweetUrl } from "@/lib/share/intent";
@@ -101,6 +104,11 @@ export default function TeamMode() {
   const [busy, setBusy] = useState<null | "add" | "download" | "share">(null);
   const [note, setNote] = useState<string | null>(null);
   const [flipped, setFlipped] = useState(false);
+  const [view, setView] = useState<"edit" | "3d">("edit");
+  const [cards3d, setCards3d] = useState<{
+    front: HTMLCanvasElement;
+    back: HTMLCanvasElement;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const backRef = useRef<HTMLCanvasElement>(null);
@@ -108,6 +116,7 @@ export default function TeamMode() {
   const rootRef = useRef<HTMLDivElement>(null);
 
   const [names, setNames] = useState("");
+  const [stack, setStack] = useState("");
 
   // the crew reuses the builder card back: crew name where the name goes, the
   // roster where the builder class goes
@@ -118,11 +127,12 @@ export default function TeamMode() {
       .filter(Boolean);
     return {
       name: teamName.trim() || "CREW",
+      stack: stack.trim() || undefined,
       builderClass: roster.length
         ? roster.join(" · ")
         : `${photos.length} builder${photos.length === 1 ? "" : "s"}`,
     };
-  }, [teamName, names, photos.length]);
+  }, [teamName, names, stack, photos.length]);
 
   const members = useCallback(() => {
     const list = names.split(",").map((s) => s.trim());
@@ -168,9 +178,17 @@ export default function TeamMode() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ensureFontsLoaded().then(() =>
-      composeTeam({ ctx, w: side, h: side, members: members(), style, teamName }),
+      composeTeam({
+        ctx,
+        w: side,
+        h: side,
+        members: members(),
+        style,
+        teamName,
+        identity: crewIdentity,
+      }),
     );
-  }, [photos, style, teamName, names, members]);
+  }, [photos, style, teamName, names, members, crewIdentity]);
 
   // the QR side
   useEffect(() => {
@@ -188,6 +206,34 @@ export default function TeamMode() {
       composeCardBack(ctx, side, side, crewIdentity, style, true, "CREW PASS"),
     );
   }, [photos.length, style, crewIdentity]);
+
+  // 3D needs both faces as textures; debounced so typing doesn't thrash it
+  useEffect(() => {
+    if (view !== "3d" || !photos.length) return;
+    let alive = true;
+    const t = setTimeout(async () => {
+      const [front, back] = await Promise.all([
+        renderTeamToCanvas({
+          members: members(),
+          style,
+          teamName,
+          identity: crewIdentity,
+        }),
+        renderCardBackToCanvas({
+          w: 1200,
+          h: 1200,
+          identity: crewIdentity,
+          style,
+          label: "CREW PASS",
+        }),
+      ]);
+      if (alive) setCards3d({ front, back });
+    }, 220);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [view, photos, style, teamName, members, crewIdentity]);
 
   // GSAP reveal + stagger whenever the crew preview appears / mode flips
   const hasPhotos = photos.length > 0;
@@ -239,7 +285,12 @@ export default function TeamMode() {
           style,
           label: "CREW PASS",
         })
-      : renderTeamToBlob({ members: members(), style, teamName });
+      : renderTeamToBlob({
+          members: members(),
+          style,
+          teamName,
+          identity: crewIdentity,
+        });
 
   const onDownload = async () => {
     setBusy("download");
@@ -426,6 +477,19 @@ export default function TeamMode() {
                 </span>
               </label>
             )}
+            <label className="block">
+              <span className="hh-label mb-1.5 block text-ink/70">
+                Primary tech stack{" "}
+                <span className="text-ink/40">(optional)</span>
+              </span>
+              <input
+                value={stack}
+                onChange={(e) => setStack(e.target.value)}
+                placeholder="Python / PyTorch / LLMs"
+                maxLength={38}
+                className="hh-input"
+              />
+            </label>
           </div>
         </div>
 
@@ -459,7 +523,24 @@ export default function TeamMode() {
 
       {/* --------------------------------------------------------- preview */}
       <Panel className="lg:sticky lg:top-4">
-        <PanelHead title="Crew preview" />
+        <PanelHead
+          title="Crew preview"
+          right={
+            <div className="flex shrink-0 gap-1.5">
+              {(["edit", "3d"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  aria-pressed={view === v}
+                  className="hh-tile px-2.5 py-1.5"
+                >
+                  {v === "edit" ? "2D" : "3D"}
+                </button>
+              ))}
+            </div>
+          }
+        />
         <div className="flex flex-col items-center gap-4 px-5 py-6 sm:px-6">
           {photos.length === 0 ? (
             <div className="flex aspect-square w-full max-w-[360px] flex-col items-center justify-center gap-2 rounded-2xl border-[3px] border-dashed border-goa-green/40 bg-goa-green/10 px-6 text-center">
@@ -471,6 +552,30 @@ export default function TeamMode() {
                 Add up to {MAX} photos on the left.
               </span>
             </div>
+          ) : view === "3d" ? (
+            <>
+              {cards3d ? (
+                <Card3D
+                  front={cards3d.front}
+                  back={cards3d.back}
+                  flipped={flipped}
+                  onFlip={() => setFlipped((f) => !f)}
+                />
+              ) : (
+                <div className="h-[520px] w-full max-w-[380px] animate-pulse rounded-2xl border-[3px] border-dashed border-goa-green/40 bg-goa-green/10" />
+              )}
+              <button
+                type="button"
+                onClick={() => setFlipped((f) => !f)}
+                className="hh-btn hh-btn-paper"
+              >
+                <FlipIcon className="h-4 w-4" />
+                {flipped ? "Show the front" : "Flip to the QR"}
+              </button>
+              <p className="font-mono text-[0.66rem] uppercase tracking-[0.14em] text-ink/45">
+                Grab the card and fling it — the lanyard swings
+              </p>
+            </>
           ) : (
             <>
               <div

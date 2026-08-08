@@ -53,6 +53,14 @@ const VARIANTS: Record<Tab, [FrameShape, string][]> = {
   team: [],
 };
 
+// one-tap fills for the stack field
+const STACK_PRESETS = [
+  "Rust / Solana",
+  "Python / AI",
+  "React / Next.js",
+  "Solidity / EVM",
+];
+
 // a swatch colour per style for the theme tiles
 const STYLE_DOT: Record<FrameStyle, string> = {
   sunset: "#fee101",
@@ -85,6 +93,7 @@ export default function Generator() {
   // only scold about the empty name once they've actually been in the field
   const [nameTouched, setNameTouched] = useState(false);
   const [handle, setHandle] = useState("");
+  const [stack, setStack] = useState("");
   const [view, setView] = useState<"edit" | "3d">("edit");
   const [flipped, setFlipped] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -115,9 +124,10 @@ export default function Generator() {
     () => ({
       name: name.trim() || undefined,
       handle: handle.trim() || undefined,
+      stack: stack.trim() || undefined,
       builderClass: name.trim() ? builderClass(name) : undefined,
     }),
-    [name, handle],
+    [name, handle, stack],
   );
 
   const onPhoto = useCallback((p: DecodedPhoto) => {
@@ -244,6 +254,35 @@ export default function Generator() {
                     />
                   </label>
                 </div>
+                <label className="mt-3 block">
+                  <span className="hh-label mb-1.5 block text-ink/70">
+                    Primary tech stack{" "}
+                    <span className="text-ink/40">(optional)</span>
+                  </span>
+                  <input
+                    value={stack}
+                    onChange={(e) => setStack(e.target.value)}
+                    placeholder="Python / PyTorch / LLMs"
+                    maxLength={38}
+                    className="hh-input"
+                  />
+                  <span className="mt-2 flex flex-wrap gap-2">
+                    {STACK_PRESETS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={(e) => {
+                          setStack(s);
+                          pop(e.currentTarget);
+                        }}
+                        aria-pressed={stack === s}
+                        className="hh-tile py-1 text-[0.62rem]"
+                      >
+                        + {s}
+                      </button>
+                    ))}
+                  </span>
+                </label>
                 <p className="mt-3 font-mono text-[0.7rem] text-ink/60">
                   {identity.builderClass ? (
                     <>

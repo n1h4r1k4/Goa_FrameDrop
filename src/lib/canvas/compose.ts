@@ -18,7 +18,13 @@ const SUN = COLORS.sun1;
 const GREEN = COLORS.goaGreen;
 const DEEP = COLORS.goaGreenDeep;
 
-export type Identity = { name?: string; handle?: string; builderClass?: string };
+export type Identity = {
+  name?: string;
+  handle?: string;
+  builderClass?: string;
+  /** primary tech stack, e.g. "Python / PyTorch / LLMs" */
+  stack?: string;
+};
 
 /** An image template overlay with a transparent photo window (fractions of the canvas). */
 export type OverlaySpec = {
@@ -169,6 +175,11 @@ function subline(identity?: Identity): string {
     .filter(Boolean)
     .join("  ·  ");
 }
+
+const stackLabel = (identity?: Identity) => {
+  const s = identity?.stack?.trim();
+  return s ? `STACK: ${s.toUpperCase()}` : "";
+};
 
 /** Set ctx.font at `size`, shrunk just enough that `text` fits `maxW`. */
 function fitFont(
@@ -348,6 +359,33 @@ function drawPhotoMat(
   ctx.restore();
 }
 
+/** Outline pill carrying the tech stack. Returns false when there's nothing to draw. */
+function drawStackChip(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  identity: Identity | undefined,
+  u: number,
+  color: string,
+  maxW: number,
+): boolean {
+  const t = stackLabel(identity);
+  if (!t) return false;
+  fitFont(ctx, t, maxW - u * 48, u * 22, FONT.mono());
+  const w = Math.min(maxW, ctx.measureText(t).width + u * 48);
+  const h = u * 46;
+  roundRectPath(ctx, cx - w / 2, cy - h / 2, w, h, h / 2);
+  ctx.lineWidth = Math.max(1, u * 3);
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(t, cx, cy + u * 1);
+  ctx.textBaseline = "alphabetic";
+  return true;
+}
+
 function drawSmallSun(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -524,12 +562,18 @@ function composeBleed(
   drawCelestial(ctx, win.x + win.w - pad - u * 18, win.y + pad + u * 22, u, cfg);
 
   // title (top)
+  const stack = stackLabel(identity);
   ctx.textBaseline = "top";
   if (isCircle) {
     ctx.textAlign = "center";
     ctx.fillStyle = CREAM;
     ctx.font = `800 ${u * 44}px ${FONT.display()}`;
     ctx.fillText("HH GOA 2026", win.x + win.w / 2, win.y + pad);
+    if (stack) {
+      ctx.fillStyle = SUN;
+      fitFont(ctx, stack, win.w * 0.62, u * 20, FONT.mono());
+      ctx.fillText(stack, win.x + win.w / 2, win.y + pad + u * 50);
+    }
   } else {
     ctx.textAlign = "left";
     ctx.fillStyle = CREAM;
@@ -538,6 +582,11 @@ function composeBleed(
     ctx.fillStyle = PINK;
     ctx.font = `600 ${u * 21}px ${FONT.mono()}`;
     ctx.fillText(`#${SHARE.hashtag}`, win.x + pad, win.y + pad * 0.8 + u * 52);
+    if (stack) {
+      ctx.fillStyle = SUN;
+      fitFont(ctx, stack, win.w * 0.6, u * 20, FONT.mono());
+      ctx.fillText(stack, win.x + pad, win.y + pad * 0.8 + u * 84);
+    }
   }
 
   // bottom row: name pill (or wordmark) + meta
@@ -628,9 +677,10 @@ function composeBadge(
   ctx.fillStyle = CREAM;
   ctx.font = `800 ${u * 74}px ${FONT.display()}`;
   ctx.fillText("HH GOA 2026", cx, win.y - u * 66);
+  // dates move up here so the panel's third line is free for the stack
   ctx.fillStyle = PINK;
   ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-  ctx.fillText(`BUILDER ID · #${SHARE.hashtag}`, cx, win.y - u * 30);
+  ctx.fillText(`#${SHARE.hashtag} · ${EVENT.dates}`, cx, win.y - u * 30);
 
   // photo window, mounted on a cream mat
   drawPhotoMat(ctx, win, u, W);
@@ -662,20 +712,23 @@ function composeBadge(
     if (identity?.name) {
       ctx.fillStyle = DEEP;
       ctx.font = `800 ${u * 62}px ${FONT.display()}`;
-      ctx.fillText(truncate(identity.name, 18), p.x + p.w / 2, p.y + p.h * 0.44);
+      const stack = stackLabel(identity);
+      ctx.fillText(
+        truncate(identity.name, 18),
+        p.x + p.w / 2,
+        p.y + p.h * (stack ? 0.38 : 0.46),
+      );
       const sub = subline(identity);
       if (sub) {
         ctx.fillStyle = PINK;
         fitFont(ctx, sub, p.w - u * 44, u * 24, FONT.mono());
-        ctx.fillText(sub, p.x + p.w / 2, p.y + p.h * 0.66);
+        ctx.fillText(sub, p.x + p.w / 2, p.y + p.h * (stack ? 0.62 : 0.78));
       }
-      ctx.fillStyle = GREEN;
-      ctx.font = `500 ${u * 22}px ${FONT.mono()}`;
-      ctx.fillText(
-        `#${SHARE.hashtag} · ${EVENT.dates}`,
-        p.x + p.w / 2,
-        p.y + p.h * 0.86,
-      );
+      if (stack) {
+        ctx.fillStyle = GREEN;
+        fitFont(ctx, stack, p.w - u * 44, u * 22, FONT.mono(), "500");
+        ctx.fillText(stack, p.x + p.w / 2, p.y + p.h * 0.86);
+      }
     } else {
       ctx.fillStyle = DEEP;
       ctx.font = `800 ${u * 52}px ${FONT.display()}`;
@@ -976,9 +1029,12 @@ function composeTicket(
   fitFont(ctx, sub, p.w - u * 44, u * 23, FONT.mono());
   ctx.fillText(sub, cx, p.y + p.h * 0.82);
 
+  // stack chip under the ribbon; the furniture below shifts to make room
+  const hasStack = drawStackChip(ctx, cx, u * 1088, identity, u, cfg.accent, p.w);
+
   // stub: the QR lives on the BACK of the pass, so the front carries the
   // paper-ticket furniture instead — perforation, serial, barcode
-  const perfY = u * 1096;
+  const perfY = hasStack ? u * 1142 : u * 1096;
   ctx.save();
   ctx.setLineDash([u * 14, u * 12]);
   ctx.lineWidth = Math.max(1, u * 3);
@@ -994,25 +1050,25 @@ function composeTicket(
   ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,251,232,0.55)";
   ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
-  ctx.fillText("SERIAL", m + u * 46, perfY + u * 62);
+  ctx.fillText("SERIAL", m + u * 46, perfY + u * 50);
   ctx.fillStyle = cfg.accent;
   ctx.font = `700 ${u * 26}px ${FONT.mono()}`;
-  ctx.fillText(serial, m + u * 46, perfY + u * 96);
+  ctx.fillText(serial, m + u * 46, perfY + u * 84);
 
   ctx.textAlign = "right";
   ctx.fillStyle = "rgba(255,251,232,0.55)";
   ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
-  ctx.fillText("EDITION", W - m - u * 46, perfY + u * 62);
+  ctx.fillText("EDITION", W - m - u * 46, perfY + u * 50);
   ctx.fillStyle = cfg.accent;
   ctx.font = `700 ${u * 26}px ${FONT.mono()}`;
-  ctx.fillText("5TH · GOA", W - m - u * 46, perfY + u * 96);
+  ctx.fillText("5TH · GOA", W - m - u * 46, perfY + u * 84);
 
   drawBarcode(
     ctx,
     m + u * 46,
-    perfY + u * 132,
+    perfY + u * 110,
     W - m * 2 - u * 92,
-    u * 60,
+    u * 54,
     serial,
     "rgba(255,251,232,0.85)",
   );
@@ -1023,7 +1079,7 @@ function composeTicket(
   ctx.fillText(
     finalized ? "QR ON THE BACK — FLIP THE PASS" : "TAP GENERATE TO ISSUE THIS PASS",
     cx,
-    perfY + u * 236,
+    perfY + u * 198,
   );
 
   drawCornerTicks(
@@ -1100,8 +1156,10 @@ export function composeCardBack(
   const studioY = H - m - u * 48;
   const datesY = H - m - u * 82;
   const sub = subline(identity);
+  const stack = stackLabel(identity);
   const serialY = datesY - u * 50;
-  const classY = serialY - u * 38;
+  const stackY = serialY - (stack ? u * 36 : 0);
+  const classY = stackY - (stack ? u * 36 : u * 38);
   const nameY = classY - (sub ? u * 48 : u * 10);
   const scanY = nameY - u * 48;
 
@@ -1127,6 +1185,11 @@ export function composeCardBack(
     ctx.fillStyle = PINK;
     fitFont(ctx, sub, W - m * 2 - u * 80, u * 24, FONT.mono());
     ctx.fillText(sub, cx, classY);
+  }
+  if (stack) {
+    ctx.fillStyle = CREAM;
+    fitFont(ctx, stack, W - m * 2 - u * 80, u * 22, FONT.mono(), "500");
+    ctx.fillText(stack, cx, stackY);
   }
   // same serial as the front, so the two sides read as one pass
   ctx.fillStyle = "rgba(255,251,232,0.55)";
@@ -1186,6 +1249,8 @@ export type TeamComposeInput = {
   members: TeamMember[];
   style?: FrameStyle;
   teamName?: string;
+  /** carries the crew's shared tech stack onto the card */
+  identity?: Identity;
 };
 
 function teamCells(
@@ -1251,15 +1316,26 @@ export function composeTeam(input: TeamComposeInput): void {
   ctx.fillStyle = CREAM;
   ctx.font = `800 ${u * 68}px ${FONT.display()}`;
   ctx.fillText("HH GOA 2026", cx, H * 0.1);
+  // edition rides in the subtitle here — a corner stamp collides with the
+  // theme motif that sits in the crew card's top corners
   ctx.fillStyle = PINK;
   ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-  ctx.fillText("ONE FRAME, WHOLE CREW", cx, H * 0.13);
+  ctx.fillText("ONE FRAME, WHOLE CREW · 5TH EDITION", cx, H * 0.13);
+
+  // Bottom block is anchored to the inner border rule and the photo grid takes
+  // whatever is left, so the type sits evenly under the photos instead of
+  // stranding a band of empty green between them.
+  const stack = stackLabel(input.identity);
+  const bottomRule = H - m - W * 0.022;
+  const datesY = bottomRule - u * 28;
+  const stackY = datesY - u * 40;
+  const crewY = stackY - (stack ? u * 46 : u * 12);
 
   // grid of photos with name tags
   const gx = m + W * 0.03;
   const gyTop = H * 0.17;
   const gw = W - gx * 2;
-  const gh = H * 0.66 - gyTop;
+  const gh = crewY - u * 76 - gyTop;
   const n = Math.max(1, Math.min(4, members.length));
   const rects = teamCells(gx, gyTop, gw, gh, n);
   for (let i = 0; i < n; i++) {
@@ -1289,14 +1365,19 @@ export function composeTeam(input: TeamComposeInput): void {
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = CREAM;
   ctx.font = `800 ${u * 46}px ${FONT.display()}`;
-  ctx.fillText(truncate(teamName?.trim() || "THE CREW", 22), cx, H * 0.87);
-  ctx.fillStyle = cfg.accent;
-  ctx.font = `600 ${u * 26}px ${FONT.mono()}`;
-  ctx.fillText(`#${SHARE.hashtag}`, cx, H * 0.91);
-  ctx.fillStyle = "rgba(255,251,232,0.8)";
+  ctx.fillText(truncate(teamName?.trim() || "THE CREW", 22), cx, crewY);
+  if (stack) {
+    ctx.fillStyle = cfg.accent;
+    fitFont(ctx, stack, W - m * 2 - u * 90, u * 22, FONT.mono());
+    ctx.fillText(stack, cx, stackY);
+  }
+  ctx.fillStyle = "rgba(255,251,232,0.85)";
   ctx.font = `500 ${u * 20}px ${FONT.mono()}`;
-  ctx.fillText(`${EVENT.dates} · ${EVENT.location}`, cx, H * 0.94);
+  ctx.fillText(
+    `#${SHARE.hashtag} · ${EVENT.dates} · ${EVENT.location}`,
+    cx,
+    datesY,
+  );
 
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.045, W);
-  drawStamp(ctx, W - m - W * 0.04 - u * 150, m + W * 0.05, u, cfg.accent);
 }

@@ -22,6 +22,7 @@ export function metadataText(identity?: Identity, label = "BUILDER PASS"): strin
     identity?.name ? `Name: ${identity.name}` : null,
     identity?.handle ? `X: @${identity.handle.replace(/^@/, "")}` : null,
     identity?.builderClass ? `Class: ${identity.builderClass}` : null,
+    identity?.stack ? `Stack: ${identity.stack}` : null,
     `${EVENT.dates} · ${EVENT.location}`,
     `#${SHARE.hashtag}`,
   ]

@@ -137,9 +137,56 @@ export async function renderCardBackToBlob(input: {
   return blob;
 }
 
+/** Card back onto a canvas element (for use as a WebGL texture). */
+export async function renderCardBackToCanvas(
+  input: {
+    w: number;
+    h: number;
+    identity?: Identity;
+    style?: FrameStyle;
+    finalized?: boolean;
+    label?: string;
+  },
+  maxSide = 1024,
+): Promise<HTMLCanvasElement> {
+  const s = Math.min(1, maxSide / Math.max(input.w, input.h));
+  await ensureFontsLoaded();
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(input.w * s);
+  canvas.height = Math.round(input.h * s);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable.");
+  composeCardBack(
+    ctx,
+    canvas.width,
+    canvas.height,
+    input.identity,
+    input.style,
+    input.finalized ?? true,
+    input.label,
+  );
+  return canvas;
+}
+
 export type RenderTeamInput = Omit<TeamComposeInput, "ctx" | "w" | "h"> & {
   size?: number;
 };
+
+/** Team frame onto a canvas element (for use as a WebGL texture). */
+export async function renderTeamToCanvas(
+  input: RenderTeamInput,
+  maxSide = 1024,
+): Promise<HTMLCanvasElement> {
+  const side = Math.min(input.size ?? 1200, maxSide);
+  await ensureFontsLoaded();
+  const canvas = document.createElement("canvas");
+  canvas.width = side;
+  canvas.height = side;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable.");
+  composeTeam({ ...input, ctx, w: side, h: side });
+  return canvas;
+}
 
 /** Render a team/combined frame (square) to a PNG Blob. */
 export async function renderTeamToBlob(input: RenderTeamInput): Promise<Blob> {
