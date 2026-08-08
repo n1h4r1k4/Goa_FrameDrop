@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Card3D from "./Card3D";
+import { FlipIcon } from "./icons";
 import { renderToCanvas } from "@/lib/canvas/export";
 import { composeCardBack } from "@/lib/canvas/compose";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
@@ -90,9 +91,10 @@ export default function Card3DView({
       <button
         type="button"
         onClick={() => setFlipped((f) => !f)}
-        className="rounded-full border border-cream/25 px-5 py-2 font-mono text-xs uppercase tracking-widest text-cream/80 transition-colors hover:border-sun-1/70 active:scale-95"
+        className="flex items-center gap-2 rounded-full border border-cream/25 px-5 py-2 font-mono text-xs uppercase tracking-widest text-cream/80 transition-colors hover:border-sun-1/70 active:scale-95"
       >
-        {flipped ? "Show front" : "Flip to QR ↻"}
+        <FlipIcon className="h-4 w-4" />
+        {flipped ? "Show front" : "Flip to QR"}
       </button>
       <p className="font-mono text-[11px] text-cream/50">
         grab the card and fling it — the lanyard swings

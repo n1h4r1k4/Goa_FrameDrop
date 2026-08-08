@@ -1,6 +1,7 @@
 "use client";
 
 import { COLORS } from "@/lib/brand";
+import { RefreshIcon } from "./icons";
 
 type Props = {
   scale: number;
@@ -57,9 +58,15 @@ export default function FrameControls({
         <input
           value={name}
           onChange={(e) => onName(e.target.value)}
-          placeholder="Name (optional)"
+          placeholder="Your name (required)"
+          required
+          aria-required="true"
           maxLength={24}
-          className="rounded-xl border border-cream/20 bg-goa-green-deep/40 px-4 py-2.5 font-mono text-sm text-cream placeholder:text-cream/40 focus:border-sun-1 focus:outline-none"
+          className={`rounded-xl border bg-goa-green-deep/40 px-4 py-2.5 font-mono text-sm text-cream placeholder:text-cream/40 focus:outline-none ${
+            name.trim()
+              ? "border-cream/20 focus:border-sun-1"
+              : "border-goa-red/50 focus:border-goa-red"
+          }`}
         />
         <input
           value={handle}
@@ -76,16 +83,17 @@ export default function FrameControls({
             class: <span className="text-sun-1">// {builderClass.toUpperCase()}</span>
           </span>
         ) : (
-          <span className="font-mono text-xs text-cream/40">
-            add a name for a builder class
+          <span className="font-mono text-xs text-goa-red/90">
+            your name is required
           </span>
         )}
         <button
           type="button"
           onClick={onChangePhoto}
-          className="font-mono text-xs uppercase tracking-widest text-cream/70 hover:text-sun-1"
+          className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-cream/70 hover:text-sun-1"
         >
-          ↺ Change photo
+          <RefreshIcon className="h-3.5 w-3.5" />
+          Change photo
         </button>
       </div>
     </div>

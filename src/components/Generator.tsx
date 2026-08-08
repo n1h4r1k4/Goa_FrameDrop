@@ -94,6 +94,7 @@ export default function Generator() {
         : builderidShape;
   const needsGenerate = shape === "ticket";
   const finalized = needsGenerate ? generated : true;
+  const hasName = name.trim().length > 0;
 
   const variants = VARIANTS[tab];
   const currentVariant = tab === "profile" ? profileShape : builderidShape;
@@ -285,7 +286,15 @@ export default function Generator() {
           </div>
 
           <div className="reveal w-full">
-            {needsGenerate && !generated ? (
+            {!hasName ? (
+              <button
+                type="button"
+                disabled
+                className="w-full cursor-not-allowed rounded-full border-2 border-cream/25 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-cream/50"
+              >
+                Enter your name to continue
+              </button>
+            ) : needsGenerate && !generated ? (
               <button
                 type="button"
                 onClick={() => setGenerated(true)}

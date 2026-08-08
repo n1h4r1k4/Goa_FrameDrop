@@ -66,8 +66,15 @@ export function compose(input: ComposeInput): void {
     radius: shapeCfg.window.radius * k,
   };
 
+  // themed base background so every shape (not just the ticket) reflects the style
+  const baseBg =
+    cfg.label === "Midnight"
+      ? "#06231c"
+      : cfg.label === "Palm"
+        ? "#0c7a45"
+        : GREEN;
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = GREEN;
+  ctx.fillStyle = baseBg;
   ctx.fillRect(0, 0, w, h);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
@@ -363,7 +370,10 @@ function composeBleed(
 
   pinkBorderWindow(ctx, win, W);
 
-  // title (top) + small sun
+  // theme motif (sun / crescent-moon+stars / palm), top-right of the window
+  drawCelestial(ctx, win.x + win.w - pad - u * 18, win.y + pad + u * 22, u, cfg);
+
+  // title (top)
   ctx.textBaseline = "top";
   if (isCircle) {
     ctx.textAlign = "center";
@@ -378,7 +388,6 @@ function composeBleed(
     ctx.fillStyle = PINK;
     ctx.font = `600 ${u * 21}px ${FONT.mono()}`;
     ctx.fillText(`#${SHARE.hashtag}`, win.x + pad, win.y + pad * 0.8 + u * 52);
-    drawSmallSun(ctx, win.x + win.w - pad - u * 6, win.y + pad + u * 14, u * 20);
   }
 
   // bottom row: name pill (or wordmark) + meta
@@ -430,6 +439,10 @@ function composeBadge(
 
   drawGrid(ctx, m, m, W - m * 2, H - m * 2, u);
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, W * 0.05, W);
+
+  // theme motifs (sun / moon / palm) flanking the title
+  drawCelestial(ctx, W * 0.17, win.y - u * 72, u, cfg);
+  drawCelestial(ctx, W * 0.83, win.y - u * 72, u, cfg);
 
   // title block above the photo
   ctx.textAlign = "center";
@@ -501,7 +514,7 @@ function composeBadge(
     }
   }
 
-  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.055, u, SUN);
+  drawStamp(ctx, W - m - W * 0.02 - u * 150, m + W * 0.055, u, cfg.accent);
 }
 
 // ---------- ticket / boarding-pass ID ----------
@@ -614,6 +627,40 @@ function drawQRPlaceholder(
   ctx.font = `500 ${u * 15}px ${FONT.mono()}`;
   ctx.fillText("tap Generate", x + box / 2, y + box / 2 + u * 16);
   ctx.restore();
+}
+
+// a single theme motif (sun / crescent-moon+stars / palm) at one point
+function drawCelestial(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  u: number,
+  cfg: StyleConfig,
+): void {
+  if (cfg.label === "Midnight") {
+    ctx.fillStyle = CREAM;
+    ctx.beginPath();
+    ctx.arc(cx, cy, u * 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#06231c";
+    ctx.beginPath();
+    ctx.arc(cx - u * 9, cy - u * 4, u * 17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,251,232,0.9)";
+    for (const [dx, dy, rr] of [
+      [u * 24, -u * 16, u * 2.6],
+      [u * 30, u * 8, u * 2],
+      [u * 12, u * 22, u * 2],
+    ]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, rr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (cfg.label === "Palm") {
+    palm(ctx, cx, cy + u * 26, u * 60, false, cfg.accent);
+  } else {
+    drawSmallSun(ctx, cx, cy, u * 22);
+  }
 }
 
 function drawStyleMotif(

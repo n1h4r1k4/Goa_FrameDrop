@@ -5,6 +5,7 @@ import { renderToBlob, downloadBlob } from "@/lib/canvas/export";
 import { shareImageFile, canShareFiles } from "@/lib/share/webshare";
 import { tweetUrl } from "@/lib/share/intent";
 import { uploadFrame } from "@/lib/blob/client";
+import { DownloadIcon, ShareIcon } from "./icons";
 import { SHARE } from "@/lib/brand";
 import type { DecodedPhoto } from "@/lib/heic/decode";
 import type { Placement } from "@/lib/canvas/transform";
@@ -132,17 +133,31 @@ export default function ResultActions({
           type="button"
           onClick={onDownload}
           disabled={busy !== null}
-          className="flex-1 rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform active:scale-95 disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-goa-green-deep transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
         >
-          {busy === "download" ? "Rendering…" : "↓ Download PNG"}
+          {busy === "download" ? (
+            "Rendering…"
+          ) : (
+            <>
+              <DownloadIcon className="h-4 w-4" />
+              Download PNG
+            </>
+          )}
         </button>
         <button
           type="button"
           onClick={onShare}
           disabled={busy !== null}
-          className="flex-1 rounded-full border-2 border-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform active:scale-95 disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-sun-1 px-6 py-3.5 font-mono text-sm font-bold uppercase tracking-widest text-sun-1 transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
         >
-          {busy === "share" ? "Preparing…" : `Share to X · #${SHARE.hashtag}`}
+          {busy === "share" ? (
+            "Preparing…"
+          ) : (
+            <>
+              <ShareIcon className="h-4 w-4" />
+              Share to X · #{SHARE.hashtag}
+            </>
+          )}
         </button>
       </div>
       {note && <p className="font-mono text-xs text-cream/70">{note}</p>}
