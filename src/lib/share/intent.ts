@@ -9,7 +9,7 @@ export function tweetUrl(
   const text = caption.replace(/\s*#FrameInGoa\s*$/i, "").trim();
   const params = new URLSearchParams();
   params.set("text", text);
-  params.set("hashtags", SHARE.hashtag);
+  params.set("hashtags", `${SHARE.hashtag},${SHARE.crewHashtag}`);
   if (shareUrl) params.set("url", shareUrl);
   // x.com directly — twitter.com/intent only 302s here anyway
   return `https://x.com/intent/tweet?${params.toString()}`;

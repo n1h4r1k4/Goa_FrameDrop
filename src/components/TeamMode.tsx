@@ -21,6 +21,7 @@ import Card3D from "./Card3D";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
 import { shareImageFile, prefersNativeShare } from "@/lib/share/webshare";
 import { tweetUrl, openComposerTab } from "@/lib/share/intent";
+import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
 import { uploadFrame } from "@/lib/blob/client";
 import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
 import { SHARE } from "@/lib/brand";
@@ -326,23 +327,36 @@ export default function TeamMode() {
       }
     }
 
-    // desktop: open the composer inside the click, then navigate it
+    // desktop: clipboard write and tab open both start inside the click
+    const png = build();
+    const copied = copyImageDuringClick(png);
     const win = openComposerTab();
+
     setBusy("share");
     try {
-      const blob = await build();
+      const blob = await png;
       let url: string;
+      let hosted = false;
       try {
         const { shareId } = await uploadFrame(blob);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`, CAPTION);
-        setNote("Opened X — your crew pass is the link preview on the post.");
+        hosted = true;
       } catch {
         url = tweetUrl(undefined, CAPTION);
-        downloadBlob(blob, fileName);
-        setNote("Opened X. Image downloaded so you can attach it.");
       }
       if (win) win.location.replace(url);
       else window.open(url, "_blank", "noopener,noreferrer");
+
+      if (hosted) {
+        setNote("Opened X — your crew pass is the link preview on the post.");
+      } else if (await copied) {
+        setNote(
+          `Opened X. Your crew pass is on the clipboard — press ${pasteShortcut()} in the composer to attach it.`,
+        );
+      } else {
+        downloadBlob(blob, fileName);
+        setNote("Opened X. Image downloaded so you can attach it.");
+      }
     } catch {
       win?.close();
       setNote("Couldn't prepare the share. Try Download.");

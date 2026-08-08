@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { renderToBlob, downloadBlob } from "@/lib/canvas/export";
 import { shareImageFile, prefersNativeShare } from "@/lib/share/webshare";
 import { tweetUrl, openComposerTab } from "@/lib/share/intent";
+import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
 import { uploadFrame } from "@/lib/blob/client";
 import { DownloadIcon, ShareIcon } from "./icons";
 import { SHARE } from "@/lib/brand";
@@ -114,26 +115,43 @@ export default function ResultActions({
       }
     }
 
-    // Desktop: straight to the X composer. Open the tab inside the click, then
-    // point it at the intent once the PNG is hosted and the OG link exists.
+    // Desktop: straight to the X composer. Both the clipboard write and the tab
+    // open have to start inside the click, before any await, or the activation
+    // is spent — hence the promise handed to the clipboard rather than a blob.
+    const png =
+      !dirtyRef.current && blobRef.current
+        ? Promise.resolve(blobRef.current)
+        : build();
+    const copied = copyImageDuringClick(png);
     const win = openComposerTab();
+
     setBusy("share");
     try {
-      const blob =
-        !dirtyRef.current && blobRef.current ? blobRef.current : await build();
+      const blob = await png;
       let url: string;
+      let hosted = false;
       try {
         const { shareId } = await uploadFrame(blob);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`);
-        setNote("Opened X — your pass is the link preview on the post.");
+        hosted = true;
       } catch {
-        // Blob not configured / offline: text intent + hand them the file.
+        // Blob store not configured / offline: post the text, and get the image
+        // to them another way.
         url = tweetUrl();
-        downloadBlob(blob, fileName);
-        setNote("Opened X. Image downloaded so you can attach it to the post.");
       }
       if (win) win.location.replace(url);
       else window.open(url, "_blank", "noopener,noreferrer");
+
+      if (hosted) {
+        setNote("Opened X — your pass is the link preview on the post.");
+      } else if (await copied) {
+        setNote(
+          `Opened X. Your pass is on the clipboard — press ${pasteShortcut()} in the composer to attach it.`,
+        );
+      } else {
+        downloadBlob(blob, fileName);
+        setNote("Opened X. Image downloaded so you can attach it to the post.");
+      }
     } catch {
       win?.close();
       setNote("Couldn't prepare the share. Try Download instead.");
