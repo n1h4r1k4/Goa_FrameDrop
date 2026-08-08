@@ -50,6 +50,7 @@ function Thumb({ bmp, onRemove }: { bmp: ImageBitmap; onRemove: () => void }) {
 
 export default function TeamMode() {
   const [photos, setPhotos] = useState<DecodedPhoto[]>([]);
+  const [mode, setMode] = useState<"individual" | "group">("individual");
   const [teamName, setTeamName] = useState("");
   const [style, setStyle] = useState<FrameStyle>("sunset");
   const [busy, setBusy] = useState<null | "add" | "download" | "share">(null);
@@ -73,9 +74,10 @@ export default function TeamMode() {
       setBusy("add");
       setNote(null);
       try {
-        const picked = Array.from(files).slice(0, MAX - photos.length);
+        const cap = mode === "group" ? 1 : MAX;
+        const picked = Array.from(files).slice(0, cap - photos.length);
         const decoded = await Promise.all(picked.map((f) => decodePhoto(f)));
-        setPhotos((prev) => [...prev, ...decoded].slice(0, MAX));
+        setPhotos((prev) => [...prev, ...decoded].slice(0, cap));
       } catch (e) {
         setNote(
           e instanceof DecodeError
@@ -86,7 +88,7 @@ export default function TeamMode() {
         setBusy(null);
       }
     },
-    [photos.length],
+    [photos.length, mode],
   );
 
   useEffect(() => {
@@ -147,10 +149,31 @@ export default function TeamMode() {
     }
   };
 
-  const canAdd = photos.length < MAX;
+  const canAdd = photos.length < (mode === "group" ? 1 : MAX);
 
   return (
     <div className="flex flex-col items-center gap-5">
+      <div className="flex w-full gap-2">
+        <button
+          type="button"
+          onClick={() => setMode("individual")}
+          aria-pressed={mode === "individual"}
+          className={`flex-1 rounded-full px-3 py-2 font-mono text-xs uppercase tracking-widest transition-colors ${mode === "individual" ? "bg-sun-1 text-goa-green-deep" : "border border-cream/25 text-cream/75"}`}
+        >
+          Individual Photos
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMode("group");
+            setPhotos((p) => p.slice(0, 1));
+          }}
+          aria-pressed={mode === "group"}
+          className={`flex-1 rounded-full px-3 py-2 font-mono text-xs uppercase tracking-widest transition-colors ${mode === "group" ? "bg-sun-1 text-goa-green-deep" : "border border-cream/25 text-cream/75"}`}
+        >
+          Group Photo
+        </button>
+      </div>
       {photos.length === 0 ? (
         <div className="flex w-full flex-col gap-3">
         <button
@@ -187,10 +210,16 @@ export default function TeamMode() {
             />
           </svg>
           <span className="font-mono text-sm uppercase tracking-[0.2em] text-sun-1">
-            {busy === "add" ? "Reading photos…" : "Add teammates' photos"}
+            {busy === "add"
+              ? "Reading photos…"
+              : mode === "group"
+                ? "Add your group photo"
+                : "Add teammates' photos"}
           </span>
           <span className="font-mono text-xs text-cream/60">
-            pick up to 4 · jpg / png / heic
+            {mode === "group"
+              ? "one group shot · jpg / png / heic"
+              : "pick up to 4 · jpg / png / heic"}
           </span>
         </button>
         <CameraCapture
@@ -231,12 +260,14 @@ export default function TeamMode() {
             </div>
           </div>
 
-          <input
-            value={names}
-            onChange={(e) => setNames(e.target.value)}
-            placeholder="Names, comma-separated (Krishna, Aisha, Dev)"
-            className="w-full rounded-xl border border-cream/20 bg-goa-green-deep/40 px-4 py-2.5 font-mono text-sm text-cream placeholder:text-cream/40 focus:border-sun-1 focus:outline-none"
-          />
+          {mode === "individual" && (
+            <input
+              value={names}
+              onChange={(e) => setNames(e.target.value)}
+              placeholder="Names, comma-separated (Krishna, Aisha, Dev)"
+              className="w-full rounded-xl border border-cream/20 bg-goa-green-deep/40 px-4 py-2.5 font-mono text-sm text-cream placeholder:text-cream/40 focus:border-sun-1 focus:outline-none"
+            />
+          )}
           <input
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
