@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- A — "Frame at sunset": the product is a frame generator, so the mark IS
+       a viewfinder aperture with the Goa sun setting inside it.
+       Rays are cream, not transparent yellow — yellow at low alpha over green
+       turns olive and disappears. Brackets sit clear of the horizon band. -->
+  <defs>
+    <radialGradient id="a-sky" cx="50%" cy="58%" r="72%">
+      <stop offset="0%" stop-color="#0f8149" />
+      <stop offset="100%" stop-color="#072415" />
+    </radialGradient>
+    <linearGradient id="a-sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fee101" />
+      <stop offset="100%" stop-color="#f79400" />
+    </linearGradient>
+    <clipPath id="a-above"><rect x="0" y="0" width="512" height="300" /></clipPath>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#a-sky)" />
+
+  <!-- rays, clipped at the horizon -->
+  <g clip-path="url(#a-above)">
+    <g transform="translate(256 300)" stroke="#fee101" stroke-width="11"
+       stroke-linecap="round" opacity="0.85">
+      <line x1="0" y1="0" x2="0" y2="-186" />
+      <line x1="0" y1="0" x2="-93" y2="-161" />
+      <line x1="0" y1="0" x2="93" y2="-161" />
+      <line x1="0" y1="0" x2="-161" y2="-93" />
+      <line x1="0" y1="0" x2="161" y2="-93" />
+    </g>
+    <!-- setting sun, half-drowned by the horizon -->
+    <circle cx="256" cy="300" r="82" fill="url(#a-sun)" />
+  </g>
+
+  <!-- horizon + surf, kept inside the bracket square -->
+  <g stroke-linecap="round">
+    <line x1="120" y1="300" x2="392" y2="300" stroke="#fffbe8" stroke-width="12" />
+    <line x1="150" y1="340" x2="362" y2="340" stroke="#fffbe8" stroke-width="9" opacity="0.6" />
+    <line x1="186" y1="374" x2="326" y2="374" stroke="#e6198a" stroke-width="9" />
+  </g>
+
+  <!-- viewfinder brackets: the "frame" half of the idea -->
+  <g fill="none" stroke="#fee101" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M84 152 V112 A28 28 0 0 1 112 84 H152" />
+    <path d="M360 84 H400 A28 28 0 0 1 428 112 V152" />
+    <path d="M428 360 V400 A28 28 0 0 1 400 428 H360" />
+    <path d="M152 428 H112 A28 28 0 0 1 84 400 V360" />
+  </g>
+</svg>

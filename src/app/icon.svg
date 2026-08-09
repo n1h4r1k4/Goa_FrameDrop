@@ -1,20 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Sun-yellow field, not night-black: a dark icon disappears into dark
-       browser chrome, which is exactly what happened. Yellow reads on both. -->
+  <!-- The poster-sunset avatar, inverted onto a sun-yellow field. A green
+       field is dark enough to sink into dark browser chrome — the same
+       failure the night-black icon had. Yellow reads on both.
+       Reduced to sun + horizon + shoreline: palms turn to mush below 24px,
+       and stacking slats and surf lines made the whole thing read as a
+       burger at 16px. Three shapes is what survives. -->
   <rect width="64" height="64" rx="14" fill="#fee101" />
-  <!-- crescent, bitten out of a disc so it stays crisp at 16px -->
-  <circle cx="36" cy="27" r="15" fill="#0a2a18" />
-  <circle cx="28" cy="22" r="13" fill="#fee101" />
-  <!-- star -->
-  <circle cx="15" cy="15" r="2.6" fill="#0a2a18" />
+
+  <defs>
+    <clipPath id="i-above"><rect x="0" y="0" width="64" height="41" /></clipPath>
+  </defs>
+
+  <!-- sun: orange against the yellow sky so it still separates at 16px,
+       with a single slat to keep the retro-poster cue -->
+  <g clip-path="url(#i-above)">
+    <circle cx="32" cy="41" r="21" fill="#f28c00" />
+    <rect x="11" y="31" width="42" height="3.4" rx="1.7" fill="#fee101" />
+  </g>
+
+  <!-- horizon -->
+  <line x1="7" y1="41" x2="57" y2="41" stroke="#0a2a18" stroke-width="5.5"
+        stroke-linecap="round" />
   <!-- shoreline -->
-  <line
-    x1="10"
-    y1="50"
-    x2="54"
-    y2="50"
-    stroke="#e6198a"
-    stroke-width="6"
-    stroke-linecap="round"
-  />
+  <line x1="19" y1="52" x2="45" y2="52" stroke="#e6198a" stroke-width="4.5"
+        stroke-linecap="round" />
 </svg>

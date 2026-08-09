@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- B — "Poster sunset": the hhgoa.com hero scene reduced to the three shapes
+       that survive a 48px avatar crop — sun, sea, palms. Sun raised toward the
+       optical centre so a circular crop keeps it whole. -->
+  <defs>
+    <linearGradient id="b-sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fee101" />
+      <stop offset="55%" stop-color="#f9dc01" />
+      <stop offset="100%" stop-color="#f08a00" />
+    </linearGradient>
+    <clipPath id="b-above"><rect x="0" y="0" width="512" height="306" /></clipPath>
+  </defs>
+
+  <rect width="512" height="512" fill="#0b6839" />
+
+  <g clip-path="url(#b-above)">
+    <circle cx="256" cy="306" r="146" fill="url(#b-sun)" />
+    <!-- slats across the sun's lower half: the retro-poster tell -->
+    <g fill="#0b6839">
+      <rect x="104" y="228" width="304" height="11" rx="5.5" />
+      <rect x="104" y="256" width="304" height="13" rx="6.5" />
+      <rect x="104" y="286" width="304" height="15" rx="7.5" />
+    </g>
+  </g>
+
+  <!-- horizon, surf, and a pink shoreline that spans the full beach -->
+  <g stroke-linecap="round">
+    <line x1="52" y1="306" x2="460" y2="306" stroke="#fffbe8" stroke-width="14" />
+    <line x1="96" y1="350" x2="416" y2="350" stroke="#fffbe8" stroke-width="10" opacity="0.6" />
+    <line x1="72" y1="392" x2="440" y2="392" stroke="#e6198a" stroke-width="12" />
+  </g>
+
+  <!-- palms, silhouetted in deep green so they read as cut-outs -->
+  <g fill="#0a2a18">
+    <path d="M96 412 C92 350 96 302 108 268 l16 5 C114 308 110 354 112 412 Z" />
+    <path d="M116 272 C88 250 60 250 40 268 c26 -6 50 -2 70 12 Z" />
+    <path d="M116 268 C112 234 90 210 60 200 c24 22 38 44 40 70 Z" />
+    <path d="M120 270 C142 240 176 230 206 238 c-30 4 -56 18 -74 40 Z" />
+    <path d="M122 276 C150 274 176 286 194 308 c-24 -12 -48 -18 -70 -18 Z" />
+
+    <path d="M416 412 C420 350 416 302 404 268 l-16 5 C398 308 402 354 400 412 Z" />
+    <path d="M396 272 C424 250 452 250 472 268 c-26 -6 -50 -2 -70 12 Z" />
+    <path d="M396 268 C400 234 422 210 452 200 c-24 22 -38 44 -40 70 Z" />
+    <path d="M392 270 C370 240 336 230 306 238 c30 4 56 18 74 40 Z" />
+    <path d="M390 276 C362 274 336 286 318 308 c24 -12 48 -18 70 -18 Z" />
+  </g>
+</svg>

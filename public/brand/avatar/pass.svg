@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- C — "The pass": a builder pass whose photo window is the sunset. Says
+       ID card and Goa in one mark. Card shrunk so its corners clear the
+       circular crop X and GitHub apply; the lanyard is a real cord through
+       the punch hole rather than a clip floating in space. -->
+  <defs>
+    <linearGradient id="c-sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fee101" />
+      <stop offset="100%" stop-color="#f79400" />
+    </linearGradient>
+    <clipPath id="c-window"><circle cx="256" cy="248" r="74" /></clipPath>
+  </defs>
+
+  <rect width="512" height="512" fill="#0b6839" />
+
+  <g transform="rotate(-4 256 256)">
+    <!-- lanyard: a closed loop of cord through the punch hole, not two loose
+         ends — loose ends read as antennae at avatar size -->
+    <path d="M256 148 C238 96 200 64 176 20 M256 148 C274 96 312 64 336 20"
+          fill="none" stroke="#0a2a18" stroke-width="17" stroke-linecap="round" />
+    <path d="M176 20 C232 44 280 44 336 20" fill="none"
+          stroke="#0a2a18" stroke-width="17" stroke-linecap="round" />
+
+    <!-- the pass: cream stock, hard ink line -->
+    <rect x="120" y="112" width="272" height="332" rx="30"
+          fill="#fffbe8" stroke="#0a2a18" stroke-width="12" />
+
+    <!-- punch hole -->
+    <rect x="230" y="140" width="52" height="16" rx="8" fill="#0a2a18" />
+
+    <!-- photo window: the sunset inside the aperture -->
+    <circle cx="256" cy="248" r="74" fill="#0e5a34" />
+    <g clip-path="url(#c-window)">
+      <circle cx="256" cy="278" r="54" fill="url(#c-sun)" />
+      <rect x="182" y="278" width="148" height="9" fill="#0e5a34" />
+      <rect x="182" y="298" width="148" height="11" fill="#0e5a34" />
+      <line x1="182" y1="278" x2="330" y2="278" stroke="#fffbe8" stroke-width="7" />
+    </g>
+    <circle cx="256" cy="248" r="74" fill="none" stroke="#0a2a18" stroke-width="12" />
+
+    <!-- name plate + meta bars: the mono strip on every pass -->
+    <rect x="156" y="344" width="200" height="30" rx="8" fill="#fee101"
+          stroke="#0a2a18" stroke-width="7" />
+    <g fill="#0a2a18" opacity="0.85">
+      <rect x="156" y="392" width="122" height="11" rx="5.5" />
+      <rect x="156" y="414" width="82" height="11" rx="5.5" />
+    </g>
+    <rect x="298" y="390" width="58" height="36" rx="6" fill="#e6198a" />
+  </g>
+</svg>
