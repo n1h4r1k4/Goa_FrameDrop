@@ -9,7 +9,7 @@ import {
   downloadBlob,
 } from "@/lib/canvas/export";
 import { shareImageFiles, prefersNativeShare } from "@/lib/share/webshare";
-import { tweetUrl, openComposerTab } from "@/lib/share/intent";
+import { tweetUrl, openComposerTab, nativeCaption } from "@/lib/share/intent";
 import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
 import { uploadFrame } from "@/lib/blob/client";
 import { getShareOrigin } from "@/lib/siteUrl";
@@ -139,19 +139,38 @@ export default function ResultActions({
   const onShare = async () => {
     setNote(null);
 
-    // Phone/tablet: the OS sheet lists X and carries the real PNGs — both
-    // faces. Fire it as synchronously as possible so the activation survives.
+    // Phone/tablet: go to X itself. The OS sheet can attach the real PNGs, but
+    // it cannot be aimed at an app — it drops the user in a picker and "Share
+    // to X" dead-ends one tap short. Navigating to the intent instead lands in
+    // the X composer directly (the x.com URL is an App Link on Android and a
+    // universal link on iOS), and the /s link previews the pass, so the graphic
+    // still rides along. A same-tab navigation needs no popup permission and
+    // survives the awaits above it.
     if (prefersNativeShare()) {
+      setBusy("share");
       try {
-        const pair = await faces();
-        const res = await shareImageFiles(
-          [pair.front, pair.back],
-          SHARE.defaultCaption,
-          [`${stem}.png`, `${stem}-back.png`],
-        );
-        if (res !== "unsupported") return;
+        const { plate, front, back: qr } = await buildSharePayload();
+        const { shareId } = await uploadFrame(front, plate, qr);
+        window.location.href = tweetUrl(`${getShareOrigin()}/s/${shareId}`);
+        return;
       } catch {
-        /* fall through to the composer */
+        // No network / Blob unconfigured: the sheet still carries both real
+        // PNGs and still lists X. One tap further, but it works offline.
+        try {
+          const pair = await faces();
+          const res = await shareImageFiles(
+            [pair.front, pair.back],
+            nativeCaption(),
+            [`${stem}.png`, `${stem}-back.png`],
+          );
+          if (res !== "unsupported") return;
+        } catch {
+          /* fall through to the note */
+        }
+        setNote("Couldn't reach the network. Download the PNG and post it manually.");
+        return;
+      } finally {
+        setBusy(null);
       }
     }
 

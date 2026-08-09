@@ -21,7 +21,7 @@ import {
 import Card3D from "./Card3D";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
 import { shareImageFiles, prefersNativeShare } from "@/lib/share/webshare";
-import { tweetUrl, openComposerTab } from "@/lib/share/intent";
+import { tweetUrl, openComposerTab, nativeCaption } from "@/lib/share/intent";
 import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
 import { uploadFrame } from "@/lib/blob/client";
 import { getShareOrigin } from "@/lib/siteUrl";
@@ -334,18 +334,54 @@ export default function TeamMode() {
         }),
       ]);
 
-    // phone/tablet: the OS sheet lists X and carries the real PNGs
+    // Phone/tablet: straight into X rather than the OS picker — see the note in
+    // ResultActions. The sheet stays as the offline fallback.
     if (prefersNativeShare()) {
       setBusy("share");
       try {
-        const [front, qr] = await bothFaces();
-        const res = await shareImageFiles([front, qr], CAPTION, [
-          "hh-goa-team.png",
-          "hh-goa-team-back.png",
+        const [[front, qr], pass, backCanvas] = await Promise.all([
+          bothFaces(),
+          renderTeamToCanvas({
+            members: members(),
+            style,
+            teamName,
+            identity: crewIdentity,
+          }),
+          renderCardBackToCanvas({
+            w: 1200,
+            h: 1200,
+            identity: crewIdentity,
+            style,
+            label: "CREW PASS",
+          }),
         ]);
-        if (res !== "unsupported") return;
+        const plate = await renderShareCardToBlob({
+          pass,
+          back: backCanvas,
+          style,
+          identity: crewIdentity,
+          label: "CREW PASS",
+        });
+        const { shareId } = await uploadFrame(front, plate, qr);
+        window.location.href = tweetUrl(
+          `${getShareOrigin()}/s/${shareId}`,
+          CAPTION,
+        );
+        return;
       } catch {
-        /* fall through to the composer */
+        try {
+          const [front, qr] = await bothFaces();
+          const res = await shareImageFiles(
+            [front, qr],
+            nativeCaption(CAPTION),
+            ["hh-goa-team.png", "hh-goa-team-back.png"],
+          );
+          if (res !== "unsupported") return;
+        } catch {
+          /* fall through to the note */
+        }
+        setNote("Couldn't reach the network. Download the PNG and post it manually.");
+        return;
       } finally {
         setBusy(null);
       }

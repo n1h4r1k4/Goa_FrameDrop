@@ -16,6 +16,16 @@ export function tweetUrl(
 }
 
 /**
+ * Caption for the OS share sheet. The intent URL carries its tags in the
+ * `hashtags` parameter, but a native share has no such field — both tags have
+ * to live inside the text itself or they never reach the post.
+ */
+export function nativeCaption(caption: string = SHARE.defaultCaption): string {
+  const base = caption.replace(/\s*#FrameInGoa\s*$/i, "").trim();
+  return `${base} #${SHARE.hashtag} #${SHARE.crewHashtag}`;
+}
+
+/**
  * Open the composer tab *now*, synchronously inside the click, and hand back a
  * handle to point at the intent once the image is hosted. Awaiting first and
  * opening later spends the user activation and the popup gets blocked.
