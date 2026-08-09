@@ -24,6 +24,7 @@ import { shareImageFiles, prefersNativeShare } from "@/lib/share/webshare";
 import { tweetUrl, openComposerTab } from "@/lib/share/intent";
 import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
 import { uploadFrame } from "@/lib/blob/client";
+import { getShareOrigin } from "@/lib/siteUrl";
 import { FRAME_STYLES, STYLE, type FrameStyle } from "@/lib/canvas/styles";
 import { SHARE } from "@/lib/brand";
 import CameraCapture from "./CameraCapture";
@@ -390,7 +391,7 @@ export default function TeamMode() {
       try {
         // front = the pass /s shows, plate = the link preview, qr = the flip
         const { shareId } = await uploadFrame(front, plate, qr);
-        url = tweetUrl(`${window.location.origin}/s/${shareId}`, CAPTION);
+        url = tweetUrl(`${getShareOrigin()}/s/${shareId}`, CAPTION);
         hosted = true;
       } catch {
         url = tweetUrl(undefined, CAPTION);

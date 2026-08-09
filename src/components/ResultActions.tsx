@@ -12,6 +12,7 @@ import { shareImageFiles, prefersNativeShare } from "@/lib/share/webshare";
 import { tweetUrl, openComposerTab } from "@/lib/share/intent";
 import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
 import { uploadFrame } from "@/lib/blob/client";
+import { getShareOrigin } from "@/lib/siteUrl";
 import { DownloadIcon, ShareIcon } from "./icons";
 import { SHARE } from "@/lib/brand";
 import type { DecodedPhoto } from "@/lib/heic/decode";
@@ -173,7 +174,7 @@ export default function ResultActions({
       try {
         // front = the pass /s shows, plate = the link preview, qr = the flip
         const { shareId } = await uploadFrame(front, plate, qr);
-        url = tweetUrl(`${window.location.origin}/s/${shareId}`);
+        url = tweetUrl(`${getShareOrigin()}/s/${shareId}`);
         hosted = true;
       } catch {
         // Blob store not configured / offline: post the text, and get the image
