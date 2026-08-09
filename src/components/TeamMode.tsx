@@ -20,7 +20,7 @@ import {
 } from "@/lib/canvas/export";
 import Card3D from "./Card3D";
 import { ensureFontsLoaded } from "@/lib/canvas/fonts";
-import { shareImageFile, prefersNativeShare } from "@/lib/share/webshare";
+import { shareImageFiles, prefersNativeShare } from "@/lib/share/webshare";
 import { tweetUrl, openComposerTab } from "@/lib/share/intent";
 import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
 import { uploadFrame } from "@/lib/blob/client";
@@ -315,11 +315,33 @@ export default function TeamMode() {
   const onShare = async () => {
     setNote(null);
 
-    // phone/tablet: the OS sheet lists X and carries the real PNG
+    // both faces of the crew pass, whichever side is on screen
+    const bothFaces = () =>
+      Promise.all([
+        renderTeamToBlob({
+          members: members(),
+          style,
+          teamName,
+          identity: crewIdentity,
+        }),
+        renderCardBackToBlob({
+          w: 1200,
+          h: 1200,
+          identity: crewIdentity,
+          style,
+          label: "CREW PASS",
+        }),
+      ]);
+
+    // phone/tablet: the OS sheet lists X and carries the real PNGs
     if (prefersNativeShare()) {
       setBusy("share");
       try {
-        const res = await shareImageFile(await build(), CAPTION, fileName);
+        const [front, qr] = await bothFaces();
+        const res = await shareImageFiles([front, qr], CAPTION, [
+          "hh-goa-team.png",
+          "hh-goa-team-back.png",
+        ]);
         if (res !== "unsupported") return;
       } catch {
         /* fall through to the composer */
@@ -328,40 +350,46 @@ export default function TeamMode() {
       }
     }
 
-    // desktop: clipboard write and tab open both start inside the click
-    const png = build();
-    const copied = copyImageDuringClick(png);
-    const win = openComposerTab();
-
-    setBusy("share");
-    try {
-      const blob = await png;
-      let url: string;
-      let hosted = false;
-      try {
-        // upload the 1200×630 plate, not the pass — see composeShareCard
-        const pass = await renderTeamToCanvas({
+    // Desktop: clipboard write and tab open both start inside the click. The
+    // clipboard gets the plate, since it carries both faces and X's intent has
+    // no media parameter — a paste is the only way to attach a real image.
+    const payload = (async () => {
+      const [[front, qr], pass, backCanvas] = await Promise.all([
+        bothFaces(),
+        renderTeamToCanvas({
           members: members(),
           style,
           teamName,
           identity: crewIdentity,
-        });
-        const card = await renderShareCardToBlob({
-          pass,
-          style,
-          identity: crewIdentity,
-          label: "CREW PASS",
-        });
-        // the QR side, so the shared link can flip too
-        const backBlob = await renderCardBackToBlob({
+        }),
+        renderCardBackToCanvas({
           w: 1200,
           h: 1200,
           identity: crewIdentity,
           style,
           label: "CREW PASS",
-        });
-        // blob = the pass (shown on /s), card = the plate (the link preview)
-        const { shareId } = await uploadFrame(blob, card, backBlob);
+        }),
+      ]);
+      const plate = await renderShareCardToBlob({
+        pass,
+        back: backCanvas,
+        style,
+        identity: crewIdentity,
+        label: "CREW PASS",
+      });
+      return { plate, front, qr };
+    })();
+    const copied = copyImageDuringClick(payload.then((p) => p.plate));
+    const win = openComposerTab();
+
+    setBusy("share");
+    try {
+      const { plate, front, qr } = await payload;
+      let url: string;
+      let hosted = false;
+      try {
+        // front = the pass /s shows, plate = the link preview, qr = the flip
+        const { shareId } = await uploadFrame(front, plate, qr);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`, CAPTION);
         hosted = true;
       } catch {
@@ -370,15 +398,16 @@ export default function TeamMode() {
       if (win) win.location.replace(url);
       else window.open(url, "_blank", "noopener,noreferrer");
 
-      if (hosted) {
-        setNote("Opened X — your crew pass is the link preview on the post.");
-      } else if (await copied) {
+      const preview = hosted ? " The link previews it too." : "";
+      if (await copied) {
         setNote(
-          `Opened X. Your crew pass is on the clipboard — press ${pasteShortcut()} in the composer to attach it.`,
+          `Opened X — press ${pasteShortcut()} in the composer to attach your crew pass, both sides.${preview}`,
         );
       } else {
-        downloadBlob(blob, fileName);
-        setNote("Opened X. Image downloaded so you can attach it.");
+        downloadBlob(plate, "hh-goa-team-share.png");
+        setNote(
+          `Opened X. The clipboard wasn't available, so your crew pass downloaded — drag it into the composer.${preview}`,
+        );
       }
     } catch {
       win?.close();

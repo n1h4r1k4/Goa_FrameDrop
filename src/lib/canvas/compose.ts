@@ -1310,6 +1310,9 @@ export function composeCardBack(
   pinkBorderRect(ctx, m, m, W - m * 2, H - m * 2, S * 0.05, S);
 }
 
+/** One face of the pass as it should appear on the share plate. */
+export type ShareFace = { img: CanvasImageSource; w: number; h: number };
+
 /**
  * The 1200×630 card X actually renders in a post.
  *
@@ -1317,14 +1320,17 @@ export function composeCardBack(
  * (0.67:1) and X only serves `summary_large_image` for something near 2:1 —
  * anything portrait gets demoted to a thumbnail-sized summary card. So the pass
  * is composited, whole and uncropped, onto a branded 1.9:1 plate.
+ *
+ * Both faces go on the plate when the back is supplied. X can only ever show
+ * one image for a link, and the flip lives behind a click on /s — so if the
+ * QR side isn't on the plate, nobody scrolling the timeline ever sees it.
+ * A 1.9:1 plate is wide enough for two portrait cards side by side anyway.
  */
 export function composeShareCard(
   ctx: CanvasRenderingContext2D,
   W: number,
   H: number,
-  pass: CanvasImageSource,
-  passW: number,
-  passH: number,
+  faces: ShareFace[],
   style: FrameStyle = "sunset",
   identity?: Identity,
   label = "BUILDER PASS",
@@ -1342,29 +1348,47 @@ export function composeShareCard(
   drawSceneBackdrop(ctx, m, m, W - m * 2, H - m * 2, u, cfg);
   drawHalftone(ctx, m, m, W - m * 2, H - m * 2, u);
 
+  const shown = faces.filter((f) => f.w > 0 && f.h > 0);
+  if (!shown.length) return;
+
   // The pass is the whole point, so it fills the plate: scaled to the full
   // height and centred, with the theme carrying the leftover width. No text
   // column — this should read as "my card", not as a banner about my card.
-  const s = Math.min((H - u * 34) / passH, (W - u * 34) / passW);
-  const pw = passW * s;
-  const ph = passH * s;
-  const px = (W - pw) / 2;
-  const py = (H - ph) / 2;
+  // With two faces they share one scale, so the pair reads as one object.
+  const gap = shown.length > 1 ? u * 26 : 0;
+  const totalW = shown.reduce((sum, f) => sum + f.w, 0);
+  const tallest = Math.max(...shown.map((f) => f.h));
+  const s = Math.min(
+    (H - u * 34) / tallest,
+    (W - u * 34 - gap * (shown.length - 1)) / totalW,
+  );
 
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.5)";
-  ctx.shadowBlur = u * 30;
-  ctx.shadowOffsetY = u * 8;
-  roundRectPath(ctx, px, py, pw, ph, u * 14);
-  ctx.fillStyle = cfg.bg;
-  ctx.fill();
-  ctx.restore();
+  const groupW = totalW * s + gap * (shown.length - 1);
+  const px = (W - groupW) / 2;
 
-  ctx.save();
-  roundRectPath(ctx, px, py, pw, ph, u * 14);
-  ctx.clip();
-  ctx.drawImage(pass, px, py, pw, ph);
-  ctx.restore();
+  let x = px;
+  for (const f of shown) {
+    const pw = f.w * s;
+    const ph = f.h * s;
+    const py = (H - ph) / 2;
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.5)";
+    ctx.shadowBlur = u * 30;
+    ctx.shadowOffsetY = u * 8;
+    roundRectPath(ctx, x, py, pw, ph, u * 14);
+    ctx.fillStyle = cfg.bg;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    roundRectPath(ctx, x, py, pw, ph, u * 14);
+    ctx.clip();
+    ctx.drawImage(f.img, x, py, pw, ph);
+    ctx.restore();
+
+    x += pw + gap;
+  }
 
   // only mark the plate where the pass doesn't already reach
   if (px > u * 150) {

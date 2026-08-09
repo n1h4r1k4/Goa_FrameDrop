@@ -141,9 +141,14 @@ export async function renderCardBackToBlob(input: {
 /** Fixed 1.9:1 plate X will render as a large image card. */
 export const SHARE_CARD = { w: 1200, h: 630 } as const;
 
-/** Composite an already-rendered pass onto the 1200×630 share plate. */
+/**
+ * Composite an already-rendered pass onto the 1200×630 share plate. Pass `back`
+ * as well and both faces land on the plate — the link preview is the only image
+ * X shows, so the QR side has to ride along on it.
+ */
 export async function renderShareCardToBlob(input: {
   pass: HTMLCanvasElement;
+  back?: HTMLCanvasElement | null;
   style?: FrameStyle;
   identity?: Identity;
   label?: string;
@@ -154,13 +159,15 @@ export async function renderShareCardToBlob(input: {
   canvas.height = SHARE_CARD.h;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable.");
+  const faces = [{ img: input.pass, w: input.pass.width, h: input.pass.height }];
+  if (input.back) {
+    faces.push({ img: input.back, w: input.back.width, h: input.back.height });
+  }
   composeShareCard(
     ctx,
     canvas.width,
     canvas.height,
-    input.pass,
-    input.pass.width,
-    input.pass.height,
+    faces,
     input.style,
     input.identity,
     input.label,

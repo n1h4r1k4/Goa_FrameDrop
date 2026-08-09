@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   renderToBlob,
   renderToCanvas,
+  renderCardBackToCanvas,
   renderShareCardToBlob,
   downloadBlob,
 } from "@/lib/canvas/export";
-import { shareImageFile, prefersNativeShare } from "@/lib/share/webshare";
+import { shareImageFiles, prefersNativeShare } from "@/lib/share/webshare";
 import { tweetUrl, openComposerTab } from "@/lib/share/intent";
 import { copyImageDuringClick, pasteShortcut } from "@/lib/share/clipboard";
 import { uploadFrame } from "@/lib/blob/client";
@@ -46,25 +47,57 @@ export default function ResultActions({
   const [busy, setBusy] = useState<null | "download" | "share">(null);
   const [note, setNote] = useState<string | null>(null);
 
-  // cache the rendered PNG so Share can fire synchronously (keeps iOS activation)
-  const blobRef = useRef<Blob | null>(null);
+  // Cache both rendered faces so Share can fire synchronously (keeps iOS
+  // activation) and can hand over the whole pass, not just the side on screen.
+  const facesRef = useRef<{ front: Blob; back: Blob } | null>(null);
   const dirtyRef = useRef(true);
 
+  const source = () => ({
+    photo: photo.bitmap,
+    photoSize: photo.size,
+    placement,
+    identity,
+    style,
+    shape,
+    overlay,
+    finalized,
+  });
+
   const build = async () => {
-    const blob = await renderToBlob({
-      photo: photo.bitmap,
-      photoSize: photo.size,
-      placement,
-      identity,
-      style,
-      shape,
-      overlay,
-      finalized,
-      back,
-    });
-    blobRef.current = blob;
+    const src = source();
+    const [front, qr] = await Promise.all([
+      renderToBlob(src),
+      renderToBlob({ ...src, back: true }),
+    ]);
+    facesRef.current = { front, back: qr };
     dirtyRef.current = false;
-    return blob;
+    return facesRef.current;
+  };
+
+  const faces = async () =>
+    !dirtyRef.current && facesRef.current ? facesRef.current : build();
+
+  /**
+   * Everything the desktop composer path needs. The plate carries both faces
+   * because X shows exactly one image for a link and allows exactly one paste.
+   */
+  const buildSharePayload = async () => {
+    const src = source();
+    const dims = overlay
+      ? { w: 1080, h: 1080 }
+      : { w: SHAPE[shape].w, h: SHAPE[shape].h };
+    const [pair, frontCanvas, backCanvas] = await Promise.all([
+      faces(),
+      renderToCanvas(src),
+      renderCardBackToCanvas({ ...dims, identity, style, finalized }),
+    ]);
+    const plate = await renderShareCardToBlob({
+      pass: frontCanvas,
+      back: backCanvas,
+      style,
+      identity,
+    });
+    return { plate, front: pair.front, back: pair.back };
   };
 
   // invalidate + debounce-prerender whenever the composition changes
@@ -87,16 +120,14 @@ export default function ResultActions({
     shape,
     overlay,
     finalized,
-    back,
   ]);
 
   const onDownload = async () => {
     setBusy("download");
     setNote(null);
     try {
-      const blob =
-        !dirtyRef.current && blobRef.current ? blobRef.current : await build();
-      downloadBlob(blob, fileName);
+      const pair = await faces();
+      downloadBlob(back ? pair.back : pair.front, fileName);
     } catch {
       setNote("Couldn't render. Try a smaller photo.");
     } finally {
@@ -107,13 +138,16 @@ export default function ResultActions({
   const onShare = async () => {
     setNote(null);
 
-    // Phone/tablet: the OS sheet lists X and carries the real PNG. Fire it as
-    // synchronously as possible so the activation survives.
+    // Phone/tablet: the OS sheet lists X and carries the real PNGs — both
+    // faces. Fire it as synchronously as possible so the activation survives.
     if (prefersNativeShare()) {
       try {
-        const blob =
-          !dirtyRef.current && blobRef.current ? blobRef.current : await build();
-        const res = await shareImageFile(blob, SHARE.defaultCaption, fileName);
+        const pair = await faces();
+        const res = await shareImageFiles(
+          [pair.front, pair.back],
+          SHARE.defaultCaption,
+          [`${stem}.png`, `${stem}-back.png`],
+        );
         if (res !== "unsupported") return;
       } catch {
         /* fall through to the composer */
@@ -123,45 +157,22 @@ export default function ResultActions({
     // Desktop: straight to the X composer. Both the clipboard write and the tab
     // open have to start inside the click, before any await, or the activation
     // is spent — hence the promise handed to the clipboard rather than a blob.
-    const png =
-      !dirtyRef.current && blobRef.current
-        ? Promise.resolve(blobRef.current)
-        : build();
-    const copied = copyImageDuringClick(png);
+    //
+    // The clipboard gets the *plate*, not the single face on screen: X's intent
+    // URL has no media parameter, so pasting is the only way an actual image
+    // gets attached to the post — and the user only gets one paste.
+    const payload = buildSharePayload();
+    const copied = copyImageDuringClick(payload.then((p) => p.plate));
     const win = openComposerTab();
 
     setBusy("share");
     try {
-      const blob = await png;
+      const { plate, front, back: qr } = await payload;
       let url: string;
       let hosted = false;
       try {
-        // upload the 1200×630 plate, not the pass — see composeShareCard
-        const pass = await renderToCanvas({
-          photo: photo.bitmap,
-          photoSize: photo.size,
-          placement,
-          identity,
-          style,
-          shape,
-          overlay,
-          finalized,
-        });
-        const card = await renderShareCardToBlob({ pass, style, identity });
-        // the QR side, so the shared link can flip too
-        const backBlob = await renderToBlob({
-          photo: photo.bitmap,
-          photoSize: photo.size,
-          placement,
-          identity,
-          style,
-          shape,
-          overlay,
-          finalized,
-          back: true,
-        });
-        // blob = the pass (shown on /s), card = the plate (the link preview)
-        const { shareId } = await uploadFrame(blob, card, backBlob);
+        // front = the pass /s shows, plate = the link preview, qr = the flip
+        const { shareId } = await uploadFrame(front, plate, qr);
         url = tweetUrl(`${window.location.origin}/s/${shareId}`);
         hosted = true;
       } catch {
@@ -172,15 +183,16 @@ export default function ResultActions({
       if (win) win.location.replace(url);
       else window.open(url, "_blank", "noopener,noreferrer");
 
-      if (hosted) {
-        setNote("Opened X — your pass is the link preview on the post.");
-      } else if (await copied) {
+      const preview = hosted ? " The link previews it too." : "";
+      if (await copied) {
         setNote(
-          `Opened X. Your pass is on the clipboard — press ${pasteShortcut()} in the composer to attach it.`,
+          `Opened X — press ${pasteShortcut()} in the composer to attach your pass, both sides.${preview}`,
         );
       } else {
-        downloadBlob(blob, fileName);
-        setNote("Opened X. Image downloaded so you can attach it to the post.");
+        downloadBlob(plate, `${stem}-share.png`);
+        setNote(
+          `Opened X. The clipboard wasn't available, so your pass downloaded — drag it into the composer.${preview}`,
+        );
       }
     } catch {
       win?.close();
