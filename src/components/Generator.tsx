@@ -165,7 +165,10 @@ export default function Generator() {
     <section id="generator" className="scroll-mt-4 px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-6xl">
         {/* what am I making? */}
-        <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+        <div
+          data-reveal-group
+          className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4"
+        >
           {MODES.map(({ id, label, Icon }) => (
             <button
               key={id}

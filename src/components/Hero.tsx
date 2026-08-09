@@ -10,12 +10,18 @@ function Swoosh() {
       aria-hidden
       preserveAspectRatio="none"
     >
+      {/* pathLength=1 normalises the dash units, so the intro can draw the
+          stroke with a plain 1→0 dashoffset and never has to measure the
+          path — which would be wrong the moment the viewBox stretches */}
       <path
+        className="swoosh-path"
         d="M8 15C118 6 262 3 380 6c66 2 141 5 212 9"
         stroke="currentColor"
         strokeWidth="6"
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
+        pathLength={1}
+        strokeDasharray={1}
       />
     </svg>
   );

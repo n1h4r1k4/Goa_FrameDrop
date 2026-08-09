@@ -23,13 +23,17 @@ export default function NoticeBoard() {
   return (
     <section className="px-4 py-14 sm:px-6 sm:py-20">
       <h2
+        data-reveal
         className="hh-h text-center text-sun-1"
         style={{ fontSize: "clamp(2.2rem, 7vw, 4rem)" }}
       >
         Notice board
       </h2>
 
-      <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-2">
+      <div
+        data-reveal-group
+        className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-2"
+      >
         {FAQ.map(({ q, a }) => (
           // the pin lives outside <details>: anything in there that isn't the
           // <summary> is hidden while the card is closed
@@ -53,7 +57,7 @@ export default function NoticeBoard() {
         ))}
       </div>
 
-      <p className="mt-10 text-center font-mono text-xs text-cream/60">
+      <p data-reveal className="mt-10 text-center font-mono text-xs text-cream/60">
         Applications for the residency are open at{" "}
         <a
           href={LINKS.apply}
