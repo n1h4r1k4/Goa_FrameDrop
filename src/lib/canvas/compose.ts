@@ -1135,10 +1135,10 @@ function composeTicket(
   ctx.textAlign = "right";
   ctx.fillStyle = "rgba(255,251,232,0.55)";
   ctx.font = `600 ${u * 18}px ${FONT.mono()}`;
-  ctx.fillText("EDITION", W - m - u * 46, perfY + u * 50);
+  ctx.fillText("VENUE", W - m - u * 46, perfY + u * 50);
   ctx.fillStyle = cfg.accent;
   ctx.font = `700 ${u * 26}px ${FONT.mono()}`;
-  ctx.fillText("5TH · GOA", W - m - u * 46, perfY + u * 84);
+  ctx.fillText(EVENT.location, W - m - u * 46, perfY + u * 84);
 
   drawBarcode(
     ctx,
@@ -1493,11 +1493,9 @@ export function composeTeam(input: TeamComposeInput): void {
   ctx.fillStyle = CREAM;
   ctx.font = `800 ${u * 68}px ${FONT.display()}`;
   ctx.fillText("HH GOA 2026", cx, H * 0.1);
-  // edition rides in the subtitle here — a corner stamp collides with the
-  // theme motif that sits in the crew card's top corners
   ctx.fillStyle = PINK;
   ctx.font = `600 ${u * 24}px ${FONT.mono()}`;
-  ctx.fillText("ONE FRAME, WHOLE CREW · 5TH EDITION", cx, H * 0.13);
+  ctx.fillText("ONE FRAME, WHOLE CREW", cx, H * 0.13);
 
   // Bottom block is anchored to the inner border rule and the photo grid takes
   // whatever is left, so the type sits evenly under the photos instead of
