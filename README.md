@@ -2,7 +2,7 @@
 
 Upload a photo → get an unmistakable **HH Goa 2026** profile frame → download it or share to X with **#FrameInGoa**. Built for the HH Goa 2026 shortlisting task (Format A: PFP frame / overlay).
 
-**Live:** https://id-gen-theta.vercel.app
+**Live:** https://goa-framedrop.vercel.app
 
 ## Features
 
@@ -12,7 +12,7 @@ Upload a photo → get an unmistakable **HH Goa 2026** profile frame → downloa
 - **Share to X:** native file share on mobile (attaches the real PNG); on desktop, a Blob-hosted `/s/[id]` link whose **OG image is the actual graphic**, so the tweet preview shows it. Pre-filled caption + `#FrameInGoa`.
 - **Signature GSAP "sun going down" intro** that reveals the tool (respects `prefers-reduced-motion`).
 - **On-brand with [hhgoa.com](https://hhgoa.com/):** Imbue + Victor Mono, Goa green + sun-yellow, bilingual गोवा, line-art sunset scene.
-- Optional **name / handle** + an auto-generated **builder class**, and a discreet **"Est. · 5th edition"** heritage stamp (the Dimo Hack series lineage).
+- Optional **name / handle** + an auto-generated **builder class**.
 
 ## Tech
 

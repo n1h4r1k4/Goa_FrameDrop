@@ -66,7 +66,7 @@ export default function Hero() {
         </div>
 
         <p className="sub mt-4 max-w-md text-center font-mono text-xs leading-relaxed text-cream/65">
-          Frame your photo for the 5th edition on the sand, then post it with{" "}
+          Frame your photo for four days on the sand, then post it with{" "}
           <span className="font-bold text-sun-1">#{SHARE.hashtag}</span>.
         </p>
 

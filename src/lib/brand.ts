@@ -27,9 +27,6 @@ export const EVENT = {
   descriptor: "the country's biggest build-station",
   location: "GOA, INDIA",
   dates: "28–31 OCT 2026",
-  /** honors the "old Hacker House" lineage — baked into the exported frame */
-  editionLabel: "Est. • 5th edition",
-  seriesCities: ["Chennai", "Amaravati", "Bangalore", "Trivandrum", "Goa"] as const,
   stats2024: { registrations: "6,800+", hackers: "390+", projects: "100" },
 } as const;
 

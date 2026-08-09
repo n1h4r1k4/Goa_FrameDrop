@@ -11,9 +11,6 @@ export default function SiteFooter() {
         <p className="font-mono text-[0.65rem] uppercase tracking-[0.3em] text-cream/60">
           {EVENT.location} · {EVENT.dates}
         </p>
-        <p className="font-mono text-xs text-cream/70">
-          5th edition of the series: {EVENT.seriesCities.join(" · ")}
-        </p>
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-1">
           <a
             className={linkCls}

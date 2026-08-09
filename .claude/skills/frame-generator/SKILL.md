@@ -1,6 +1,6 @@
 ---
 name: frame-generator
-description: Client-side canvas pipeline for the HH Goa PFP frame — normalized pan/zoom transform math shared by preview and export, the iOS canvas-size cap guard, 3-tier HEIC decode, compose draw-order (photo → overlay → text → heritage stamp), fonts-ready-before-export, and deterministic builder-class badge generation. Use when building or reviewing photo upload, canvas rendering, or PNG export.
+description: Client-side canvas pipeline for the HH Goa PFP frame — normalized pan/zoom transform math shared by preview and export, the iOS canvas-size cap guard, 3-tier HEIC decode, compose draw-order (photo → overlay → text), fonts-ready-before-export, and deterministic builder-class badge generation. Use when building or reviewing photo upload, canvas rendering, or PNG export.
 ---
 
 # HH Goa — Frame Generator (canvas)
@@ -42,7 +42,6 @@ Given a target canvas + `ImageBitmap` + Placement + optional identity:
 2. `drawImage(photo, destRect)` using the shared transform.
 3. `drawImage(frameOverlayPng, 0,0,W,H)` — transparent-center sunset frame (the brand).
 4. Text: name/handle + builder-class badge (Imbue/Victor Mono) — only if provided.
-5. Heritage **"Est. • 5th edition"** stamp (fixed corner).
 - Same function drives preview (small canvas) and export (2× canvas); pass the canvas + scale.
 
 ## HEIC + decode (`lib/heic/decode.ts`) — 3 tiers

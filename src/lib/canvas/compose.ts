@@ -581,30 +581,6 @@ function palm(
   ctx.restore();
 }
 
-function drawStamp(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  u: number,
-  color: string,
-): void {
-  ctx.save();
-  const w = u * 300;
-  const h = u * 52;
-  ctx.translate(cx, cy);
-  ctx.rotate(-0.05);
-  roundRectPath(ctx, -w / 2, -h / 2, w, h, h / 2);
-  ctx.lineWidth = Math.max(1, u * 3.5);
-  ctx.strokeStyle = color;
-  ctx.stroke();
-  ctx.fillStyle = color;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = `600 ${u * 20}px ${FONT.mono()}`;
-  ctx.fillText(EVENT.editionLabel.toUpperCase(), 0, u * 1);
-  ctx.restore();
-}
-
 // ---------- bleed mode (square / circle / landscape) ----------
 
 function composeBleed(
@@ -844,8 +820,6 @@ function composeBadge(
       );
     }
   }
-
-  drawStamp(ctx, W - m - W * 0.04 - u * 150, m + W * 0.055, u, cfg.accent);
 }
 
 // ---------- ticket / boarding-pass ID ----------

@@ -9,7 +9,7 @@ type Params = { id: string };
 
 const TITLE = "I'm in for HH Goa 2026 · #FrameInGoa";
 const DESCRIPTION =
-  "Frame your photo for Hacker House Goa 2026 (5th edition · Goa · 28–31 Oct) and share it with #FrameInGoa.";
+  "Frame your photo for Hacker House Goa 2026 (Goa · 28–31 Oct) and share it with #FrameInGoa.";
 
 export async function generateMetadata({
   params,

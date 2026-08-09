@@ -15,7 +15,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: `What is ${EVENT.shortName}?`,
-    a: `A four-day builder residency on the sand in Goa, ${EVENT.dates} — the 5th edition of the series after ${EVENT.seriesCities.slice(0, 4).join(", ")}. ${EVENT.tagline}`,
+    a: `A four-day builder residency on the sand in Goa, ${EVENT.dates} — ${EVENT.descriptor}, free to attend, stay and meals covered. ${EVENT.tagline}`,
   },
 ];
 

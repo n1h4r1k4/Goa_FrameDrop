@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "HH Goa 2026 · Frame Generator · #FrameInGoa",
   description:
-    "Turn any photo into an unmistakable HH Goa 2026 profile frame. Upload, frame, download, and share to X with #FrameInGoa. 5th edition of the series · Goa · 28–31 Oct 2026.",
+    "Turn any photo into an unmistakable HH Goa 2026 profile frame. Upload, frame, download, and share to X with #FrameInGoa. Goa · 28–31 Oct 2026.",
   applicationName: "HH Goa 2026 Frame Generator",
   keywords: [
     "Hacker House Goa",

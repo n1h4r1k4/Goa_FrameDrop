@@ -35,8 +35,8 @@ Default page = green bg + cream text. Yellow is the hero/accent color; red is re
 ## Motifs (the sunset scene)
 Sun with radiating rays low over an **ocean horizon** line; **palm-tree** silhouettes; small **Goan villa** line-art; bilingual **गोवा** in red overlapping "HACKER HOUSE". Line-art / poster-print feel; optional subtle grain. This scene is the hero AND the frame overlay AND the intro animation subject.
 
-## Heritage ("old Hacker House") — the stand-out angle
-HH Goa is the **5th edition of the series** (the "Dimo Hack" series): **Chennai → Amaravati → Bangalore → Trivandrum → Goa**. HHG'24: **6,800+ registrations, 390+ hackers, 100 projects**. Surface it via: a discreet **"Est. • 5th edition"** stamp baked into the exported frame, plus a subtle footer line listing the cities.
+## Heritage
+HHG'24 did **6,800+ registrations, 390+ hackers, 100 projects** — usable as social proof in copy. Do **not** put edition/lineage numbering ("5th edition", the city series) in UI, metadata, or the exported image; it was removed deliberately.
 
 ## Event facts
 Goa, India · **28–31 Oct 2026** · 247/500 elite builders · 4-day builder residency · free (stay + meals). Organizer: **2:47 pm Studio**.
@@ -50,7 +50,6 @@ Goa, India · **28–31 Oct 2026** · 247/500 elite builders · 4-day builder re
 ## Asset inventory
 - `public/frame/frame-scene.svg` — editable sunset scene (source of truth)
 - `public/frame/frame-overlay@2x.png` — transparent-center 2400² frame drawn onto the canvas
-- `public/frame/stamp-est-5th.svg` — heritage stamp
 - `public/og/default-og.png` — 1200×630 branded fallback card
 - `docs/reference/hhgoa_{desktop,mobile}_hero.png` — snapshots of the real site
 
